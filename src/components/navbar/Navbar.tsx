@@ -69,8 +69,8 @@ export default function Navbar() {
               href={item.href}
               className={`text-base ${
                 item.isActive
-                  ? 'text-black font-medium'
-                  : 'text-gray-500 hover:text-gray-800'
+                  ? 'text-orange-500 font-medium'
+                  : 'text-black hover:text-gray-800'
               }`}
             >
               {item.label}
