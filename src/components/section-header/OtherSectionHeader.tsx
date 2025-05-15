@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { DotsThree } from '@phosphor-icons/react'
 
 // Define the interface for the component props
-interface SectionHeaderProps {
+interface OtherSectionHeaderProps {
   pageType: 'New' | 'Best'
 }
 
-export default function SectionHeader({
+export default function OtherSectionHeader({
   pageType = 'New'
-}: SectionHeaderProps) {
+}: OtherSectionHeaderProps) {
   const [activeTab, setActiveTab] = useState('Stories')
 
   return (
@@ -21,7 +21,7 @@ export default function SectionHeader({
 
           <div className="flex rounded-full bg-gray-100 p-0.5">
             <button
-              className={`px-5 py-1.5 text-sm rounded-full ${
+              className={`px-4 py-1.5 text-sm rounded-full ${
                 activeTab === 'Stories' ? 'bg-white shadow-sm' : 'text-gray-500'
               }`}
               onClick={() => setActiveTab('Stories')}
@@ -29,7 +29,7 @@ export default function SectionHeader({
               Stories
             </button>
             <button
-              className={`px-5 py-1.5 text-sm rounded-full ${
+              className={`px-4 py-1.5 text-sm rounded-full ${
                 activeTab === 'Comments'
                   ? 'bg-white shadow-sm'
                   : 'text-gray-500'
@@ -41,7 +41,7 @@ export default function SectionHeader({
           </div>
         </div>
 
-        <button className="flex items-center h-10">
+        <button className="flex items-center">
           <DotsThree size={32} className="text-gray-600" weight="bold" />
         </button>
       </div>

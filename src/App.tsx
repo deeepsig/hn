@@ -1,12 +1,12 @@
 import Navbar from './components/navbar/Navbar'
-import SectionHeader from './components/section-header/SectionHeader'
+import OtherSectionHeader from './components/section-header/OtherSectionHeader'
 
 export default function App() {
   return (
     <div>
       <div className="">
         <Navbar />
-        <SectionHeader pageType="New" />
+        <OtherSectionHeader pageType="New" />
       </div>
     </div>
   )
