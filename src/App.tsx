@@ -6,7 +6,7 @@ export default function App() {
     <div>
       <div className="">
         <Navbar />
-        <SectionHeader />
+        <SectionHeader pageType="New" />
       </div>
     </div>
   )

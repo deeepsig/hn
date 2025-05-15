@@ -1,14 +1,23 @@
 import { useState } from 'react'
 import { DotsThree } from '@phosphor-icons/react'
 
-export default function SectionHeader() {
+// Define the interface for the component props
+interface SectionHeaderProps {
+  pageType: 'New' | 'Best'
+}
+
+export default function SectionHeader({
+  pageType = 'New'
+}: SectionHeaderProps) {
   const [activeTab, setActiveTab] = useState('Stories')
 
   return (
     <div className="max-w-[600px] mx-auto pt-8 pb-5 border-b border-gray-100 font-inter">
       <div className="flex items-center justify-between">
         <div className="flex items-center">
-          <h1 className="text-[36px] font-medium text-gray-900 mr-10">New</h1>
+          <h1 className="text-[36px] font-medium text-gray-900 mr-10">
+            {pageType}
+          </h1>
 
           <div className="flex rounded-full bg-gray-100 p-0.5">
             <button
