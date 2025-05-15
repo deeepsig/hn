@@ -1,5 +1,3 @@
-import { DotsThree } from '@phosphor-icons/react'
-
 export interface StoryItemProps {
   index: number
   title: string
@@ -22,35 +20,38 @@ export default function StoryItem({
   comments
 }: StoryItemProps) {
   return (
-    <div className="flex items-start py-4 border-b border-gray-100 font-inter">
+    <div className="flex items-start py-2 font-inter font-light text-[12px]">
       {/* Rank */}
-      <span className="w-6 text-right text-gray-400 mr-4">{index}.</span>
+      <span className="w-6 text-sm text-right text-gray-400 mr-4">
+        {index}.
+      </span>
 
       {/* Main content */}
       <div className="flex-1">
+        {/* Title */}
         <a
           href={url}
-          className="text-base font-medium text-gray-900 hover:underline"
+          className="block text-[14.5px] font-normal text-gray-900 hover:underline truncate"
+          title={title}
         >
           {title}
         </a>
-        <span className="ml-2 text-sm text-gray-500">({source})</span>
 
-        <ul className="flex flex-wrap items-center text-sm text-gray-500 mt-1 space-x-2">
-          <li>{points} points</li>
-          <li>·</li>
-          <li>by {author}</li>
-          <li>·</li>
-          <li>{time}</li>
-          <li>·</li>
-          <li>{comments} comments</li>
-        </ul>
+        {/* Source and metadata */}
+        <div className="">
+          <span className=" text-orange-500 font-normal">({source})</span>
+          <ul className="inline-flex flex-wrap items-center ml-2 space-x-2">
+            <li className="text-gray-400 text-sm">·</li>
+            <li>{points} pts</li>
+            <li className="text-gray-400 text-sm">·</li>
+            <li>by {author}</li>
+            <li className="text-gray-400 text-sm">·</li>
+            <li>{time}</li>
+            <li className="text-gray-400 text-sm">·</li>
+            <li>{comments} comments</li>
+          </ul>
+        </div>
       </div>
-
-      {/* More menu */}
-      <button className="ml-4 flex-shrink-0">
-        <DotsThree size={20} weight="bold" className="text-gray-400" />
-      </button>
     </div>
   )
 }
