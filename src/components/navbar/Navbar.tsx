@@ -52,7 +52,7 @@ const headerIcons: NavIconItem[] = [
 
 export default function Navbar() {
   return (
-    <header className="flex items-center justify-between bg-white border-b border-gray-200 px-6 font-inter">
+    <header className="flex items-center justify-between bg-white border-b border-gray-200 px-8 py-2 font-inter">
       {/* Left section - Logo and Name */}
       <div className="flex items-center">
         <img src={hnLogo} alt="Hacker News" className="h-5 mr-3" />
@@ -62,12 +62,12 @@ export default function Navbar() {
       </div>
 
       {/* Middle section - Navigation links */}
-      <nav className="hidden md:flex items-end">
+      <nav className="hidden md:flex items-end space-x-10">
         {navigationItems.map((item, index) => (
           <div key={index} className="relative">
             <a
               href={item.href}
-              className={`px-4 py-3 inline-block text-base ${
+              className={`py-3 inline-block text-base ${
                 item.isActive
                   ? 'text-black font-medium'
                   : 'text-gray-500 hover:text-gray-800'
@@ -81,7 +81,7 @@ export default function Navbar() {
           </div>
         ))}
         <button
-          className="text-gray-500 flex items-center ml-2 py-3"
+          className="text-gray-500 flex items-center py-3"
           aria-label="More options"
         >
           <CaretDown size={20} />
@@ -89,7 +89,7 @@ export default function Navbar() {
       </nav>
 
       {/* Right section - Icons */}
-      <div className="flex items-center space-x-6">
+      <div className="flex items-center space-x-8">
         {headerIcons.map((item, index) => (
           <button
             key={index}
