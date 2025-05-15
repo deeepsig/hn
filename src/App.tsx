@@ -1,3 +1,11 @@
+import Navbar from './components/navbar/Navbar'
+
 export default function App() {
-  return <div className="text-[56px] font-inter">hello</div>
+  return (
+    <div>
+      <div className="">
+        <Navbar />
+      </div>
+    </div>
+  )
 }
