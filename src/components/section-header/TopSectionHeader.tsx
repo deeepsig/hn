@@ -1,14 +1,6 @@
 import { DotsThree } from '@phosphor-icons/react'
 
-// Define the interface for the component props
-interface TopSectionHeaderProps {
-  // Optional props that can be passed to customize the header
-  className?: string
-}
-
-export default function TopSectionHeader({
-  className = ''
-}: TopSectionHeaderProps) {
+export default function TopSectionHeader() {
   // Get current date
   const date = new Date()
   const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' })
@@ -17,9 +9,7 @@ export default function TopSectionHeader({
   const year = date.getFullYear()
 
   return (
-    <div
-      className={`max-w-[600px] mx-auto pt-8 pb-5 border-b border-gray-100 font-inter ${className}`}
-    >
+    <div className="max-w-[600px] mx-auto pt-8 pb-5 border-b border-gray-100 font-inter">
       <div className="flex items-baseline justify-between">
         <div className="flex items-baseline">
           <h1 className="text-[36px] font-medium text-gray-900 mr-2">
