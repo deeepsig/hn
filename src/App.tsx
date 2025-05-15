@@ -6,7 +6,7 @@ export default function App() {
     <div>
       <div className="">
         <Navbar />
-        <SectionHeaderController pageType="Top" />
+        <SectionHeaderController pageType="New" />
       </div>
     </div>
   )
