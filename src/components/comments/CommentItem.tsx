@@ -1,9 +1,7 @@
 // src/components/comments/CommentItem.tsx
-
 import type { CommentItemProps } from '../../data/comments'
 
 export interface CommentItemWithVariantProps extends CommentItemProps {
-  /** controls layout style; data itself remains unaware of this */
   variant?: 'list' | 'thread'
 }
 
@@ -17,17 +15,10 @@ export default function CommentItem({
   variant = 'list'
 }: CommentItemWithVariantProps) {
   const isThread = variant === 'thread'
-  // in thread, split into paragraphs on double‐newline
   const paragraphs = isThread ? text.split(/\n{2,}/g) : [text]
 
   return (
-    <div
-      className={[
-        'flex flex-col py-4 font-inter font-light text-sm border-b border-gray-200 '
-      ]
-        .filter(Boolean)
-        .join(' ')}
-    >
+    <div className="flex flex-col py-4 font-inter font-light text-sm">
       {/* Header */}
       <div className="inline-flex items-baseline space-x-2 whitespace-nowrap">
         <a
