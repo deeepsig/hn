@@ -26,7 +26,7 @@ export default function StoryItem({
   return (
     <div className="flex items-baseline py-2 font-inter font-light text-[12px]">
       {/* Rank */}
-      <span className="w-6 text-right font-normal text-gray-400 mr-4">
+      <span className="text-right font-normal text-gray-400 mr-4">
         {index}.
       </span>
 
