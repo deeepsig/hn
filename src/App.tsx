@@ -1,18 +1,16 @@
+// src/App.tsx
+import { Routes, Route, Navigate } from 'react-router-dom'
 import Navbar from './components/navbar/Navbar'
-import SectionHeaderController from './components/section-header/SectionHeaderController'
-import StoryList from './components/story/StoryList'
-import CommentList from './components/comments/CommentList'
-import ThreadHeaderController from './components/thread/ThreadHeaderController'
+import SectionPageController from './pages/SectionPageController'
 
 export default function App() {
   return (
     <div>
-      <div className="">
-        <Navbar />
-        {/* <SectionHeaderController pageType="New" /> */}
-        <ThreadHeaderController />
-        <CommentList />
-      </div>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Navigate to="/new" replace />} />
+        <Route path="/:pageType" element={<SectionPageController />} />
+      </Routes>
     </div>
   )
 }
