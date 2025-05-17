@@ -10,7 +10,7 @@ import {
 import { useLocation } from 'react-router-dom'
 
 type Tab = 'Stories' | 'Comments'
-export type PageType = 'Top' | 'New' | 'Best' | 'Ask' | 'Show' | 'Active'
+export type PageType = 'Top' | 'New' | 'Best' | 'Ask' | 'Show' | 'Job'
 
 export interface StoryItemProps {
   index: number
@@ -55,7 +55,7 @@ const endpointMap: Record<PageType, string> = {
   Best: 'beststories',
   Ask: 'askstories',
   Show: 'showstories',
-  Active: 'jobstories'
+  Job: 'jobstories'
 }
 
 export default function SectionPageProvider({
