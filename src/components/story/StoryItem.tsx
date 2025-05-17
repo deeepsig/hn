@@ -1,5 +1,6 @@
 export interface StoryItemProps {
   index: number
+  rank?: number
   title: string
   url: string
   source: string
@@ -14,6 +15,7 @@ export interface StoryItemProps {
 export default function StoryItem({
   index,
   title,
+  rank,
   url,
   source,
   points,
@@ -23,11 +25,14 @@ export default function StoryItem({
   detailUrl = `#/story/${index}`, // placeholder for story detail
   authorUrl = `#/user/${author}` // placeholder for author profile
 }: StoryItemProps) {
+  // show `rank` if provided, otherwise fall back to `index`
+  const displayIndex = rank ?? index
+
   return (
     <div className="flex items-baseline py-2 font-inter font-light text-[12px]">
       {/* Rank */}
-      <span className="text-right font-normal text-gray-400 mr-4">
-        {index}.
+      <span className="mr-4 font-normal text-right text-gray-400">
+        {displayIndex}.
       </span>
 
       {/* Main content */}
@@ -46,7 +51,7 @@ export default function StoryItem({
           {/* Source external link */}
           <a
             href={source}
-            className="text-orange-500 font-normal hover:underline"
+            className="font-normal text-orange-500 hover:underline"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -54,25 +59,25 @@ export default function StoryItem({
           </a>
 
           <ul className="inline-flex flex-wrap items-center ml-2 space-x-2">
-            <li className="text-gray-400 text-sm">·</li>
+            <li className="text-sm text-gray-400">·</li>
             <li>
               <a href={detailUrl} className="hover:underline">
                 {points} pts
               </a>
             </li>
-            <li className="text-gray-400 text-sm">·</li>
+            <li className="text-sm text-gray-400">·</li>
             <li>
               <a href={authorUrl} className="hover:underline">
                 by {author}
               </a>
             </li>
-            <li className="text-gray-400 text-sm">·</li>
+            <li className="text-sm text-gray-400">·</li>
             <li>
               <a href={detailUrl} className="hover:underline">
                 {time}
               </a>
             </li>
-            <li className="text-gray-400 text-sm">·</li>
+            <li className="text-sm text-gray-400">·</li>
             <li>
               <a href={detailUrl} className="hover:underline">
                 {comments} comments

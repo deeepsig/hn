@@ -1,29 +1,13 @@
-import { ReactNode } from 'react'
+// src/components/section-header/SectionHeaderController.tsx
 import TopSectionHeader from './TopSectionHeader'
 import OtherSectionHeader from './OtherSectionHeader'
+import { useSectionPageContext } from '../../contexts/SectionPageContext'
 
-// Define the page types that our app supports
-export type PageType = 'Top' | 'New' | 'Best'
+export default function SectionHeaderController() {
+  const { pageType } = useSectionPageContext()
 
-// Interface for the component props
-interface SectionHeaderControllerProps {
-  pageType: PageType
-}
-
-/**
- * SectionHeaderController component
- *
- * Manages which header component to render based on the current page type:
- * - TopSectionHeader for the "Top" page
- * - OtherSectionHeader for "New" and "Best" pages
- */
-export default function SectionHeaderController({
-  pageType
-}: SectionHeaderControllerProps): ReactNode {
-  // Render the appropriate header based on page type
   if (pageType === 'Top') {
     return <TopSectionHeader />
-  } else {
-    return <OtherSectionHeader pageType={pageType} />
   }
+  return <OtherSectionHeader />
 }
