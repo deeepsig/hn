@@ -1,6 +1,7 @@
 // src/components/section-header/SectionHeaderController.tsx
 import TopSectionHeader from './TopSectionHeader'
-import NewBestSectionHeader from './NewBestSectionHeader'
+import NewSectionHeader from './NewSectionHeader'
+import BestSectionHeader from './BestSectionHeader'
 import AskShowSectionHeader from './AskShowSectionHeader'
 import JobsSectionHeader from './JobsSectionHeader'
 import { useSectionPageContext } from '../../contexts/SectionPageContext'
@@ -17,6 +18,9 @@ export default function SectionHeaderController() {
   if (pageType === 'Ask' || pageType === 'Show') {
     return <AskShowSectionHeader />
   }
-  // New or Best
-  return <NewBestSectionHeader />
+  if (pageType === 'Best') {
+    return <BestSectionHeader />
+  }
+  // New
+  return <NewSectionHeader />
 }

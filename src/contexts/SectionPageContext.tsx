@@ -91,7 +91,7 @@ function getRelativeTime(unixSec: number): string {
     return `${days} day${days !== 1 ? 's' : ''} ago`
   }
 
-  // Older than a week: show short date
+  // Older than a week: short date
   const d = new Date(thenMs)
   const month = d.toLocaleString('en-US', { month: 'short' })
   const day = d.getDate()
@@ -168,16 +168,13 @@ export default function SectionPageProvider({
       return
     }
 
-    // NEW / BEST: if Comments tab active, skip story fetch
-    if (
-      (pageType === 'New' || pageType === 'Best') &&
-      activeTab !== 'Stories'
-    ) {
+    // NEW: if Comments tab active, skip story fetch
+    if (pageType === 'New' && activeTab !== 'Stories') {
       setIsLoading(false)
       return
     }
 
-    // TOP, JOBS, or New/Best Stories
+    // TOP, BEST, JOBS, or New→Stories: fetch stories
     fetch(`https://hacker-news.firebaseio.com/v0/${key}.json`)
       .then((r) => r.json())
       .then((ids: number[]) =>
@@ -211,9 +208,9 @@ export default function SectionPageProvider({
       .catch(() => setIsLoading(false))
   }, [pageType, activeTab, askShowView])
 
-  // Fetch comments only for New/Best → Comments
+  // Fetch comments only for New → Comments
   useEffect(() => {
-    if (activeTab !== 'Comments' || !['New', 'Best'].includes(pageType)) {
+    if (activeTab !== 'Comments' || pageType !== 'New') {
       return
     }
 
