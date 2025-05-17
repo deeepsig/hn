@@ -4,8 +4,10 @@ import {
   useContext,
   useState,
   useEffect,
+  useMemo,
   ReactNode
 } from 'react'
+import { useLocation } from 'react-router-dom'
 
 type Tab = 'Stories' | 'Comments'
 export type PageType = 'Top' | 'New' | 'Best' | 'Ask' | 'Show' | 'Active'
@@ -40,6 +42,7 @@ interface SectionPageContextType {
   setActiveTab: (tab: Tab) => void
   stories: StoryItemProps[]
   comments: CommentItemProps[]
+  isLoading: boolean
 }
 
 const SectionPageContext = createContext<SectionPageContextType | undefined>(
@@ -60,15 +63,28 @@ export default function SectionPageProvider({
 }: {
   children: ReactNode
 }) {
-  const [pageType, setPageType] = useState<PageType>('New')
+  const { pathname } = useLocation()
+
+  // derive initial pageType from URL path, default to 'New'
+  const initialPageType = useMemo<PageType>(() => {
+    const p = pathname.slice(1) // e.g. "top"
+    const capitalized = p.charAt(0).toUpperCase() + p.slice(1)
+    return Object.keys(endpointMap).includes(capitalized)
+      ? (capitalized as PageType)
+      : 'New'
+  }, [pathname])
+
+  const [pageType, setPageType] = useState<PageType>(initialPageType)
   const [activeTab, setActiveTab] = useState<Tab>('Stories')
   const [stories, setStories] = useState<StoryItemProps[]>([])
   const [comments, setComments] = useState<CommentItemProps[]>([])
+  const [isLoading, setIsLoading] = useState<boolean>(false)
 
-  // Fetch stories when pageType or activeTab change
+  // Fetch stories
   useEffect(() => {
     if (activeTab !== 'Stories') return
 
+    setIsLoading(true)
     const key = endpointMap[pageType]
     fetch(`https://hacker-news.firebaseio.com/v0/${key}.json`)
       .then((r) => r.json())
@@ -98,51 +114,53 @@ export default function SectionPageProvider({
           authorUrl: `#/user/${i.by}`
         }))
         setStories(mapped)
+        setIsLoading(false)
       })
+      .catch(() => setIsLoading(false))
   }, [pageType, activeTab])
 
-  // Fetch recent comments when activeTab is “Comments”
+  // Fetch comments
   useEffect(() => {
     if (activeTab !== 'Comments') return
 
+    setIsLoading(true)
     fetch('https://hacker-news.firebaseio.com/v0/updates.json')
       .then((r) => r.json())
-      .then((data: { items: number[] }) => {
-        // take first 30 updated item IDs
-        return Promise.all(
+      .then((data: { items: number[] }) =>
+        Promise.all(
           data.items.slice(0, 30).map((id) =>
             fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`)
               .then((r) => r.json())
-              .then((item: any) => {
-                if (item.type !== 'comment') return null
-                return { raw: item }
-              })
-          )
-        )
-      })
-      .then((maybeComments) =>
-        Promise.all(
-          (maybeComments.filter(Boolean) as { raw: any }[]).map(
-            async ({ raw }) => {
-              // fetch parent story for title/url
-              const parent = await fetch(
-                `https://hacker-news.firebaseio.com/v0/item/${raw.parent}.json`
-              ).then((r) => r.json())
-              return {
-                id: raw.id,
-                author: raw.by,
-                time: new Date(raw.time * 1000).toLocaleString(),
-                text: raw.text,
-                postTitle: parent.title,
-                postUrl:
-                  parent.url ??
-                  `https://news.ycombinator.com/item?id=${parent.id}`
-              }
-            }
+              .then((item: any) =>
+                item.type === 'comment' ? { raw: item } : null
+              )
           )
         )
       )
-      .then((list: CommentItemProps[]) => setComments(list))
+      .then((maybe) =>
+        Promise.all(
+          (maybe.filter(Boolean) as { raw: any }[]).map(async ({ raw }) => {
+            const parent = await fetch(
+              `https://hacker-news.firebaseio.com/v0/item/${raw.parent}.json`
+            ).then((r) => r.json())
+            return {
+              id: raw.id,
+              author: raw.by,
+              time: new Date(raw.time * 1000).toLocaleString(),
+              text: raw.text,
+              postTitle: parent.title,
+              postUrl:
+                parent.url ??
+                `https://news.ycombinator.com/item?id=${parent.id}`
+            }
+          })
+        )
+      )
+      .then((list: CommentItemProps[]) => {
+        setComments(list)
+        setIsLoading(false)
+      })
+      .catch(() => setIsLoading(false))
   }, [activeTab])
 
   return (
@@ -153,7 +171,8 @@ export default function SectionPageProvider({
         activeTab,
         setActiveTab,
         stories,
-        comments
+        comments,
+        isLoading
       }}
     >
       {children}
