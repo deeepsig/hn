@@ -9,7 +9,7 @@ const navigationItems: NavItem[] = [
   { label: 'Show', href: '/show' },
   { label: 'Best', href: '/best' },
   { label: 'New', href: '/new' },
-  { label: 'Active', href: '/active' }
+  { label: 'Jobs', href: '/jobs' }
 ]
 
 export default function MiddleSectionHandler() {
