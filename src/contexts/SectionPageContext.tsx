@@ -66,7 +66,7 @@ const endpointMap: Record<PageType, string> = {
  * Convert a Unix‑seconds timestamp into a human‑friendly
  * “X minutes/hours/days ago” string (or short date after 7 days).
  */
-function getRelativeTime(unixSec: number): string {
+export function getRelativeTime(unixSec: number): string {
   const now = Date.now()
   const thenMs = unixSec * 1000
   const deltaMs = now - thenMs

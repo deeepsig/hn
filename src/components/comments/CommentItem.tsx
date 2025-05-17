@@ -1,5 +1,6 @@
 // src/components/comments/CommentItem.tsx
 import parse, { DOMNode, domToReact, Element } from 'html-react-parser'
+import { Link } from 'react-router-dom'
 import DOMPurify from 'dompurify'
 
 interface CommentItemProps {
@@ -7,9 +8,8 @@ interface CommentItemProps {
   author: string
   time: string
   postTitle: string
-  postUrl: string
-  text: string // raw, HTML‑escaped string from the API
-  authorUrl?: string
+  postUrl?: string // now unused for internal links
+  text: string
   variant?: 'list' | 'thread'
   depth?: number
   isCollapsed?: boolean
@@ -20,24 +20,15 @@ export default function CommentItem({
   author,
   time,
   postTitle,
-  postUrl,
+  id,
   text,
-  authorUrl = `#/user/${author}`,
   variant = 'list',
   depth = 0,
   isCollapsed = false,
   onToggle
 }: CommentItemProps) {
   const isThread = variant === 'thread'
-
-  /** Decode HTML entities via DOMParser */
-  function decodeHTML(html: string): string {
-    const doc = new window.DOMParser().parseFromString(html, 'text/html')
-    return doc.documentElement.textContent || ''
-  }
-
-  /** Sanitize the decoded HTML */
-  const cleanHtml = DOMPurify.sanitize(decodeHTML(text), {
+  const cleanHtml = DOMPurify.sanitize(text, {
     ALLOWED_TAGS: [
       'a',
       'b',
@@ -54,10 +45,8 @@ export default function CommentItem({
     ],
     ALLOWED_ATTR: ['href', 'title', 'target']
   })
-
-  /** Parse into React nodes, casting children to DOMNode[] */
   const content = parse(cleanHtml, {
-    replace: (node: DOMNode) => {
+    replace: (node) => {
       if (node instanceof Element && node.name === 'a') {
         return (
           <a
@@ -71,42 +60,30 @@ export default function CommentItem({
           </a>
         )
       }
-      // other tags fall through and render normally
     }
   })
 
   return (
     <div
-      className={`
-        flex flex-col py-4 font-inter text-sm
-        ${depth > 0 ? 'border-l border-gray-200 pl-4' : ''}
-      `}
+      className={`flex flex-col py-4 font-inter text-sm ${depth > 0 ? 'border-l border-gray-200 pl-4' : ''}`}
     >
-      {/* Header */}
       <div className="inline-flex items-baseline space-x-2 whitespace-nowrap">
-        <a
-          href={authorUrl}
-          className="font-medium text-gray-900 hover:underline"
-        >
-          {author}
-        </a>
+        <a className="font-medium text-gray-900 hover:underline">{author}</a>
         <span className="text-base text-gray-400">·</span>
         <span className="font-normal text-gray-800">{time}</span>
         {!isThread && (
           <>
             <span className="text-base text-gray-400">·</span>
-            <a
-              href={postUrl}
+            <Link
+              to={`/story/${id}`}
               className="font-normal text-orange-500 truncate hover:underline"
               title={postTitle}
             >
               {postTitle}
-            </a>
+            </Link>
           </>
         )}
       </div>
-
-      {/* Body */}
       <div
         className={
           isThread
@@ -116,14 +93,12 @@ export default function CommentItem({
       >
         {content}
       </div>
-
-      {/* Toggle for collapsing replies */}
       {isThread && onToggle && (
         <button
           onClick={onToggle}
           className="self-start mt-2 text-xs text-gray-500 hover:underline"
         >
-          {isCollapsed ? `+ expand replies` : `– collapse replies`}
+          {isCollapsed ? '+ expand replies' : '– collapse replies'}
         </button>
       )}
     </div>
