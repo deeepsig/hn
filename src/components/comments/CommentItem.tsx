@@ -2,34 +2,45 @@
 import parse, { DOMNode, domToReact, Element } from 'html-react-parser'
 import { Link } from 'react-router-dom'
 import DOMPurify from 'dompurify'
+import { useState } from 'react'
+import { getRelativeTime } from '../../contexts/SectionPageContext'
+
+interface RawWithChildren {
+  id: number
+  by?: string
+  time?: number
+  text?: string
+  kids?: number[]
+  deleted?: boolean
+  dead?: boolean
+  children: RawWithChildren[]
+}
 
 interface CommentItemProps {
   id: number
   author: string
   time: string
-  postTitle: string
   text: string
   variant?: 'list' | 'thread'
   depth?: number
-  isCollapsed?: boolean
-  onToggle?: () => void
-
-  // only needed for list‑view linking
+  // made optional:
+  postTitle?: string
   storyId?: number
+  replies?: RawWithChildren[]
 }
 
 export default function CommentItem({
   author,
   time,
   postTitle,
+  storyId,
   text,
   variant = 'list',
   depth = 0,
-  isCollapsed = false,
-  onToggle,
-  storyId
+  replies = []
 }: CommentItemProps) {
   const isThread = variant === 'thread'
+  const [collapsed, setCollapsed] = useState(false)
 
   const cleanHtml = DOMPurify.sanitize(text, {
     ALLOWED_TAGS: [
@@ -48,7 +59,6 @@ export default function CommentItem({
     ],
     ALLOWED_ATTR: ['href', 'title', 'target']
   })
-
   const content = parse(cleanHtml, {
     replace: (node) => {
       if (node instanceof Element && node.name === 'a') {
@@ -73,13 +83,15 @@ export default function CommentItem({
         `flex flex-col py-4 font-inter text-sm ` +
         `${depth > 0 ? 'border-l border-gray-200 pl-4' : ''}`
       }
+      style={{ marginLeft: depth * 16 }}
     >
       <div className="inline-flex items-baseline space-x-2 whitespace-nowrap">
         <a className="font-medium text-gray-900 hover:underline">{author}</a>
         <span className="text-base text-gray-400">·</span>
         <span className="font-normal text-gray-800">{time}</span>
 
-        {!isThread && storyId && (
+        {/* list‑view only, now safe if undefined */}
+        {!isThread && storyId && postTitle && (
           <>
             <span className="text-base text-gray-400">·</span>
             <Link
@@ -90,6 +102,15 @@ export default function CommentItem({
               {postTitle}
             </Link>
           </>
+        )}
+
+        {isThread && replies.length > 0 && (
+          <button
+            onClick={() => setCollapsed((c) => !c)}
+            className="ml-2 text-xs text-gray-500 hover:underline"
+          >
+            {collapsed ? '+ expand replies' : '– collapse replies'}
+          </button>
         )}
       </div>
 
@@ -103,14 +124,20 @@ export default function CommentItem({
         {content}
       </div>
 
-      {isThread && onToggle && (
-        <button
-          onClick={onToggle}
-          className="self-start mt-2 text-xs text-gray-500 hover:underline"
-        >
-          {isCollapsed ? '+ expand replies' : '– collapse replies'}
-        </button>
-      )}
+      {isThread &&
+        !collapsed &&
+        replies.map((child) => (
+          <CommentItem
+            key={child.id}
+            id={child.id}
+            author={child.by!}
+            time={getRelativeTime(child.time!)}
+            text={child.text ?? ''}
+            variant="thread"
+            depth={depth + 1}
+            replies={child.children}
+          />
+        ))}
     </div>
   )
 }

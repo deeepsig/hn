@@ -19,34 +19,55 @@ interface RawItem {
   dead?: boolean
 }
 
+type RawWithChildren = RawItem & { children: RawWithChildren[] }
+
 export default function StoryThreadPage() {
   const { storyId } = useParams<{ storyId: string }>()
   const id = Number(storyId)
   const [story, setStory] = useState<RawItem | null>(null)
-  const [comments, setComments] = useState<RawItem[]>([])
+  const [commentTree, setCommentTree] = useState<RawWithChildren[] | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    async function fetchNode(
+      nodeId: number,
+      depth: number
+    ): Promise<RawWithChildren | null> {
+      const res = await fetch(
+        `https://hacker-news.firebaseio.com/v0/item/${nodeId}.json`
+      )
+      const raw: RawItem = await res.json()
+      if (!raw || raw.deleted || raw.dead) return null
+
+      const node: RawWithChildren = { ...raw, children: [] }
+
+      if (depth < 3 && Array.isArray(raw.kids)) {
+        for (const kidId of raw.kids.slice(0, 30)) {
+          const child = await fetchNode(kidId, depth + 1)
+          if (child) node.children.push(child)
+        }
+      }
+
+      return node
+    }
+
     async function load() {
       setLoading(true)
-
-      // 1️⃣ fetch the story
-      const s = await fetch(
+      const storyRes = await fetch(
         `https://hacker-news.firebaseio.com/v0/item/${id}.json`
-      ).then((r) => r.json())
+      )
+      const s: RawItem = await storyRes.json()
       setStory(s)
 
-      // 2️⃣ fetch only top‑level comments
-      if (s.kids?.length) {
-        const tops = s.kids.slice(0, 30)
-        const rawComments = await Promise.all(
-          tops.map((cid: number) =>
-            fetch(
-              `https://hacker-news.firebaseio.com/v0/item/${cid}.json`
-            ).then((r) => r.json())
-          )
-        )
-        setComments(rawComments.filter((c) => c && !c.deleted && !c.dead))
+      if (Array.isArray(s.kids) && s.kids.length) {
+        const roots: RawWithChildren[] = []
+        for (const kidId of s.kids.slice(0, 30)) {
+          const rootNode = await fetchNode(kidId, 0)
+          if (rootNode) roots.push(rootNode)
+        }
+        setCommentTree(roots)
+      } else {
+        setCommentTree([])
       }
 
       setLoading(false)
@@ -76,16 +97,17 @@ export default function StoryThreadPage() {
       />
 
       <div className="px-2 divide-y divide-gray-100">
-        {comments.map((c) => (
+        {!commentTree && <p className="py-4 text-center">Loading comments…</p>}
+        {commentTree?.map((node) => (
           <CommentItem
-            key={c.id}
-            id={c.id}
-            author={c.by!}
-            time={getRelativeTime(c.time!)}
-            postTitle={story.title!}
-            text={c.text ?? ''}
+            key={node.id}
+            id={node.id}
+            author={node.by!}
+            time={getRelativeTime(node.time!)}
+            text={node.text ?? ''}
             variant="thread"
             depth={0}
+            replies={node.children}
           />
         ))}
       </div>
