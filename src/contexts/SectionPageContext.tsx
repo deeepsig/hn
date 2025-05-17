@@ -10,7 +10,7 @@ import {
 import { useLocation } from 'react-router-dom'
 
 type Tab = 'Stories' | 'Comments'
-export type PageType = 'Top' | 'New' | 'Best' | 'Ask' | 'Show' | 'Job'
+export type PageType = 'Top' | 'New' | 'Best' | 'Ask' | 'Show' | 'Jobs'
 
 export interface StoryItemProps {
   index: number
@@ -55,7 +55,7 @@ const endpointMap: Record<PageType, string> = {
   Best: 'beststories',
   Ask: 'askstories',
   Show: 'showstories',
-  Job: 'jobstories'
+  Jobs: 'jobstories'
 }
 
 export default function SectionPageProvider({
@@ -69,7 +69,9 @@ export default function SectionPageProvider({
   const initialPageType = useMemo<PageType>(() => {
     const p = pathname.slice(1) // e.g. "top"
     const capitalized = p.charAt(0).toUpperCase() + p.slice(1)
-    return Object.keys(endpointMap).includes(capitalized)
+    return (Object.keys(endpointMap) as PageType[]).includes(
+      capitalized as PageType
+    )
       ? (capitalized as PageType)
       : 'New'
   }, [pathname])

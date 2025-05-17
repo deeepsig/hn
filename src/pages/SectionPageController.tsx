@@ -5,8 +5,8 @@ import SectionPage from './SectionPage'
 import { useSectionPageContext, PageType } from '../contexts/SectionPageContext'
 
 // 1) define your literal tuple and derive the union type
-const allowed = ['top', 'ask', 'show', 'best', 'new', 'active'] as const
-type AllowedParam = (typeof allowed)[number] // 'top' | 'ask' | 'show' | 'best' | 'new' | 'active'
+const allowed = ['top', 'ask', 'show', 'best', 'new', 'jobs'] as const
+type AllowedParam = (typeof allowed)[number] // 'top' | 'ask' | 'show' | 'best' | 'new' | 'jobs'
 
 // 2) type‑guard function
 function isAllowedParam(x: string): x is AllowedParam {
