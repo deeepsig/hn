@@ -8,26 +8,29 @@ interface CommentItemProps {
   author: string
   time: string
   postTitle: string
-  postUrl?: string // now unused for internal links
   text: string
   variant?: 'list' | 'thread'
   depth?: number
   isCollapsed?: boolean
   onToggle?: () => void
+
+  // only needed for list‑view linking
+  storyId?: number
 }
 
 export default function CommentItem({
   author,
   time,
   postTitle,
-  id,
   text,
   variant = 'list',
   depth = 0,
   isCollapsed = false,
-  onToggle
+  onToggle,
+  storyId
 }: CommentItemProps) {
   const isThread = variant === 'thread'
+
   const cleanHtml = DOMPurify.sanitize(text, {
     ALLOWED_TAGS: [
       'a',
@@ -45,6 +48,7 @@ export default function CommentItem({
     ],
     ALLOWED_ATTR: ['href', 'title', 'target']
   })
+
   const content = parse(cleanHtml, {
     replace: (node) => {
       if (node instanceof Element && node.name === 'a') {
@@ -65,17 +69,21 @@ export default function CommentItem({
 
   return (
     <div
-      className={`flex flex-col py-4 font-inter text-sm ${depth > 0 ? 'border-l border-gray-200 pl-4' : ''}`}
+      className={
+        `flex flex-col py-4 font-inter text-sm ` +
+        `${depth > 0 ? 'border-l border-gray-200 pl-4' : ''}`
+      }
     >
       <div className="inline-flex items-baseline space-x-2 whitespace-nowrap">
         <a className="font-medium text-gray-900 hover:underline">{author}</a>
         <span className="text-base text-gray-400">·</span>
         <span className="font-normal text-gray-800">{time}</span>
-        {!isThread && (
+
+        {!isThread && storyId && (
           <>
             <span className="text-base text-gray-400">·</span>
             <Link
-              to={`/story/${id}`}
+              to={`/story/${storyId}`}
               className="font-normal text-orange-500 truncate hover:underline"
               title={postTitle}
             >
@@ -84,6 +92,7 @@ export default function CommentItem({
           </>
         )}
       </div>
+
       <div
         className={
           isThread
@@ -93,6 +102,7 @@ export default function CommentItem({
       >
         {content}
       </div>
+
       {isThread && onToggle && (
         <button
           onClick={onToggle}

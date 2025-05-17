@@ -29,7 +29,8 @@ export default function StoryThreadPage() {
   useEffect(() => {
     async function load() {
       setLoading(true)
-      // 1️⃣ fetch story
+
+      // 1️⃣ fetch the story
       const s = await fetch(
         `https://hacker-news.firebaseio.com/v0/item/${id}.json`
       ).then((r) => r.json())
@@ -47,6 +48,7 @@ export default function StoryThreadPage() {
         )
         setComments(rawComments.filter((c) => c && !c.deleted && !c.dead))
       }
+
       setLoading(false)
     }
 

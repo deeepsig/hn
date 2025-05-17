@@ -29,12 +29,13 @@ export interface StoryItemProps {
 }
 
 export interface CommentItemProps {
-  id: number
+  id: number // comment’s own ID
   author: string
   time: string // e.g. "2 days ago"
   text: string
   postTitle: string
-  postUrl: string
+  postUrl?: string // full story URL
+  storyId: number // ← NEW: root story’s ID
 }
 
 interface SectionPageContextType {
@@ -107,7 +108,7 @@ export default function SectionPageProvider({
 
   // derive initial pageType from URL path, default to 'New'
   const initialPageType = useMemo<PageType>(() => {
-    const p = pathname.slice(1) // e.g. "top"
+    const p = pathname.slice(1)
     const capitalized = p.charAt(0).toUpperCase() + p.slice(1)
     return (Object.keys(endpointMap) as PageType[]).includes(
       capitalized as PageType
@@ -208,11 +209,9 @@ export default function SectionPageProvider({
       .catch(() => setIsLoading(false))
   }, [pageType, activeTab, askShowView])
 
-  // Fetch comments only for New → Comments
+  // NEW → Comments
   useEffect(() => {
-    if (activeTab !== 'Comments' || pageType !== 'New') {
-      return
-    }
+    if (activeTab !== 'Comments' || pageType !== 'New') return
 
     setIsLoading(true)
 
@@ -252,8 +251,9 @@ export default function SectionPageProvider({
               text: raw.text,
               postTitle: root?.title ?? '[deleted]',
               postUrl:
-                root?.url ?? `https://news.ycombinator.com/item?id=${root?.id}`
-            }
+                root?.url ?? `https://news.ycombinator.com/item?id=${root?.id}`,
+              storyId: root?.id ?? raw.id
+            } as CommentItemProps
           })
         )
       )
