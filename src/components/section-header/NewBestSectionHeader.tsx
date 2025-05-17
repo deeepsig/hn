@@ -2,7 +2,7 @@
 import { DotsThree } from '@phosphor-icons/react'
 import { useSectionPageContext } from '../../contexts/SectionPageContext'
 
-export default function NewAndBestSectionHeader() {
+export default function NewBestSectionHeader() {
   const { pageType, activeTab, setActiveTab } = useSectionPageContext()
 
   return (
