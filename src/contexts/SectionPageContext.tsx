@@ -22,7 +22,7 @@ export interface StoryItemProps {
   source: string
   points: number
   author: string
-  time: string
+  time: string // e.g. "5 hours ago"
   comments: number
   detailUrl: string
   authorUrl: string
@@ -31,7 +31,7 @@ export interface StoryItemProps {
 export interface CommentItemProps {
   id: number
   author: string
-  time: string
+  time: string // e.g. "2 days ago"
   text: string
   postTitle: string
   postUrl: string
@@ -62,6 +62,42 @@ const endpointMap: Record<PageType, string> = {
   Jobs: 'jobstories'
 }
 
+/**
+ * Convert a Unix‑seconds timestamp into a human‑friendly
+ * “X minutes/hours/days ago” string (or short date after 7 days).
+ */
+function getRelativeTime(unixSec: number): string {
+  const now = Date.now()
+  const thenMs = unixSec * 1000
+  const deltaMs = now - thenMs
+
+  const seconds = Math.floor(deltaMs / 1000)
+  if (seconds < 60) {
+    return `${seconds} second${seconds !== 1 ? 's' : ''} ago`
+  }
+
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) {
+    return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`
+  }
+
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) {
+    return `${hours} hour${hours !== 1 ? 's' : ''} ago`
+  }
+
+  const days = Math.floor(hours / 24)
+  if (days < 7) {
+    return `${days} day${days !== 1 ? 's' : ''} ago`
+  }
+
+  // Older than a week: show short date
+  const d = new Date(thenMs)
+  const month = d.toLocaleString('en-US', { month: 'short' })
+  const day = d.getDate()
+  return `${month} ${day}`
+}
+
 export default function SectionPageProvider({
   children
 }: {
@@ -87,13 +123,12 @@ export default function SectionPageProvider({
   const [comments, setComments] = useState<CommentItemProps[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
-  // Fetch stories (handles Top, Jobs, New/Best Stories,
-  // and Ask/Show Top vs New)
+  // Fetch stories for all page types & toggles
   useEffect(() => {
     setIsLoading(true)
     const key = endpointMap[pageType]
 
-    // Ask & Show: always fetch stories, toggle Top/New
+    // ASK / SHOW: always stories; toggle Top vs New
     if (pageType === 'Ask' || pageType === 'Show') {
       fetch(`https://hacker-news.firebaseio.com/v0/${key}.json`)
         .then((r) => r.json())
@@ -109,7 +144,7 @@ export default function SectionPageProvider({
           )
         )
         .then((items: any[]) => {
-          let mapped = items.map((i, idx) => ({
+          let mapped: StoryItemProps[] = items.map((i, idx) => ({
             index: i.id,
             rank: idx + 1,
             title: i.title,
@@ -117,7 +152,7 @@ export default function SectionPageProvider({
             source: i.url ? new URL(i.url).host : 'news.ycombinator.com',
             points: i.score,
             author: i.by,
-            time: new Date(i.time * 1000).toLocaleString(),
+            time: getRelativeTime(i.time),
             comments: i.descendants ?? 0,
             detailUrl: `#/story/${i.id}`,
             authorUrl: `#/user/${i.by}`
@@ -133,7 +168,7 @@ export default function SectionPageProvider({
       return
     }
 
-    // New/Best: if not on Stories tab, skip
+    // NEW / BEST: if Comments tab active, skip story fetch
     if (
       (pageType === 'New' || pageType === 'Best') &&
       activeTab !== 'Stories'
@@ -142,7 +177,7 @@ export default function SectionPageProvider({
       return
     }
 
-    // Top, Jobs, or New/Best Stories:
+    // TOP, JOBS, or New/Best Stories
     fetch(`https://hacker-news.firebaseio.com/v0/${key}.json`)
       .then((r) => r.json())
       .then((ids: number[]) =>
@@ -165,7 +200,7 @@ export default function SectionPageProvider({
           source: i.url ? new URL(i.url).host : 'news.ycombinator.com',
           points: i.score,
           author: i.by,
-          time: new Date(i.time * 1000).toLocaleString(),
+          time: getRelativeTime(i.time),
           comments: i.descendants ?? 0,
           detailUrl: `#/story/${i.id}`,
           authorUrl: `#/user/${i.by}`
@@ -176,7 +211,7 @@ export default function SectionPageProvider({
       .catch(() => setIsLoading(false))
   }, [pageType, activeTab, askShowView])
 
-  // Fetch comments only on New/Best → Comments tab
+  // Fetch comments only for New/Best → Comments
   useEffect(() => {
     if (activeTab !== 'Comments' || !['New', 'Best'].includes(pageType)) {
       return
@@ -198,18 +233,14 @@ export default function SectionPageProvider({
       )
       .then((maybe) =>
         Promise.all(
-          (
-            maybe.filter(Boolean) as {
-              raw: any
-            }[]
-          ).map(async ({ raw }) => {
+          (maybe.filter(Boolean) as { raw: any }[]).map(async ({ raw }) => {
             const parent = await fetch(
               `https://hacker-news.firebaseio.com/v0/item/${raw.parent}.json`
             ).then((r) => r.json())
             return {
               id: raw.id,
               author: raw.by,
-              time: new Date(raw.time * 1000).toLocaleString(),
+              time: getRelativeTime(raw.time),
               text: raw.text,
               postTitle: parent.title,
               postUrl:
