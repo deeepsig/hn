@@ -218,40 +218,51 @@ export default function SectionPageProvider({
     }
 
     setIsLoading(true)
+
+    // helper to fetch an item by ID
+    async function getItem(id: number): Promise<any> {
+      const res = await fetch(
+        `https://hacker-news.firebaseio.com/v0/item/${id}.json`
+      )
+      if (!res.ok) throw new Error(`Failed to fetch item ${id}`)
+      return res.json()
+    }
+
+    // walk up the parent chain until you hit a non-comment (i.e. a story/job/ask)
+    async function findRootStory(comment: any): Promise<any> {
+      let current = comment
+      while (current && current.type === 'comment') {
+        current = await getItem(current.parent)
+      }
+      return current
+    }
+
     fetch('https://hacker-news.firebaseio.com/v0/updates.json')
       .then((r) => r.json())
       .then((data: { items: number[] }) =>
         Promise.all(
-          data.items.slice(0, 30).map((id) =>
-            fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`)
-              .then((r) => r.json())
-              .then((item: any) =>
-                item.type === 'comment' ? { raw: item } : null
-              )
-          )
-        )
-      )
-      .then((maybe) =>
-        Promise.all(
-          (maybe.filter(Boolean) as { raw: any }[]).map(async ({ raw }) => {
-            const parent = await fetch(
-              `https://hacker-news.firebaseio.com/v0/item/${raw.parent}.json`
-            ).then((r) => r.json())
+          data.items.slice(0, 30).map(async (id) => {
+            const raw = await getItem(id)
+            if (raw.type !== 'comment') return null
+
+            // climb up to the root story
+            const root = await findRootStory(raw)
+
             return {
               id: raw.id,
               author: raw.by,
               time: getRelativeTime(raw.time),
               text: raw.text,
-              postTitle: parent.title,
+              postTitle: root?.title ?? '[deleted]',
               postUrl:
-                parent.url ??
-                `https://news.ycombinator.com/item?id=${parent.id}`
+                root?.url ?? `https://news.ycombinator.com/item?id=${root?.id}`
             }
           })
         )
       )
-      .then((list: CommentItemProps[]) => {
-        setComments(list)
+      .then((results) => {
+        // filter out any nulls (non-comments)
+        setComments(results.filter((c): c is CommentItemProps => Boolean(c)))
         setIsLoading(false)
       })
       .catch(() => setIsLoading(false))
