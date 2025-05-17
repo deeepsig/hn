@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import ThreadHeader from '../components/thread/ThreadHeader'
 import CommentItem from '../components/comments/CommentItem'
 import { getRelativeTime } from '../contexts/SectionPageContext'
+import hnLogo from '../assets/hn.png'
 
 interface RawItem {
   id: number
@@ -77,7 +78,16 @@ export default function StoryThreadPage() {
   }, [id])
 
   if (loading || !story) {
-    return <p className="py-20 text-center">Loading…</p>
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <img
+          src={hnLogo}
+          alt="Loading..."
+          className="w-12 h-12"
+          style={{ transform: 'translateY(-10vh)' }}
+        />
+      </div>
+    )
   }
 
   const storyUrl =
