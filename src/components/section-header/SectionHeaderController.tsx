@@ -1,6 +1,6 @@
 // src/components/section-header/SectionHeaderController.tsx
 import TopSectionHeader from './TopSectionHeader'
-import OtherSectionHeader from './OtherSectionHeader'
+import NewAndBestSectionHeader from './NewAndBestSectionHeader'
 import { useSectionPageContext } from '../../contexts/SectionPageContext'
 
 export default function SectionHeaderController() {
@@ -9,5 +9,5 @@ export default function SectionHeaderController() {
   if (pageType === 'Top') {
     return <TopSectionHeader />
   }
-  return <OtherSectionHeader />
+  return <NewAndBestSectionHeader />
 }
