@@ -1,15 +1,38 @@
 // src/pages/SectionPageController.tsx
+import { useEffect } from 'react'
 import { useParams, Navigate } from 'react-router-dom'
 import SectionPage from './SectionPage'
+import { useSectionPageContext, PageType } from '../contexts/SectionPageContext'
+
+// 1) define your literal tuple and derive the union type
+const allowed = ['top', 'ask', 'show', 'best', 'new', 'active'] as const
+type AllowedParam = (typeof allowed)[number] // 'top' | 'ask' | 'show' | 'best' | 'new' | 'active'
+
+// 2) type‑guard function
+function isAllowedParam(x: string): x is AllowedParam {
+  return (allowed as readonly string[]).includes(x)
+}
 
 export default function SectionPageController() {
-  const { pageType } = useParams<{ pageType: string }>()
-  const allowed = ['top', 'ask', 'show', 'best', 'new', 'active']
+  const { pageType: ctxPageType, setPageType } = useSectionPageContext()
 
-  if (!pageType || !allowed.includes(pageType)) {
+  const { pageType: rawParam } = useParams<{ pageType: string }>()
+
+  // redirect if missing or not in our allowed list
+  if (!rawParam || !isAllowedParam(rawParam)) {
     return <Navigate to="/new" replace />
   }
 
-  const cap = (s: string) => s[0].toUpperCase() + s.slice(1)
-  return <SectionPage pageType={cap(pageType)} />
+  // now rawParam is narrowed to AllowedParam
+  useEffect(() => {
+    // capitalize: 'new' → 'New', etc.
+    const normalized = (rawParam[0].toUpperCase() +
+      rawParam.slice(1)) as PageType
+
+    if (normalized !== ctxPageType) {
+      setPageType(normalized)
+    }
+  }, [rawParam, ctxPageType, setPageType])
+
+  return <SectionPage />
 }
