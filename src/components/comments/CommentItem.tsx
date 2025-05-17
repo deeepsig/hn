@@ -1,5 +1,5 @@
 // src/components/comments/CommentItem.tsx
-export interface CommentItemProps {
+interface CommentItemProps {
   id: number
   author: string
   time: string
