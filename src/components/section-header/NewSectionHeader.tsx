@@ -1,8 +1,8 @@
-// src/components/section-header/OtherSectionHeader.tsx
+// src/components/section-header/NewSectionHeader.tsx
 import { DotsThree } from '@phosphor-icons/react'
 import { useSectionPageContext } from '../../contexts/SectionPageContext'
 
-export default function NewBestSectionHeader() {
+export default function NewSectionHeader() {
   const { pageType, activeTab, setActiveTab } = useSectionPageContext()
 
   return (

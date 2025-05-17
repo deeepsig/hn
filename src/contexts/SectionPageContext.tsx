@@ -29,12 +29,13 @@ export interface StoryItemProps {
 }
 
 export interface CommentItemProps {
-  id: number
+  id: number // comment’s own ID
   author: string
   time: string // e.g. "2 days ago"
   text: string
   postTitle: string
-  postUrl: string
+  postUrl?: string // full story URL
+  storyId: number // ← NEW: root story’s ID
 }
 
 interface SectionPageContextType {
@@ -66,7 +67,7 @@ const endpointMap: Record<PageType, string> = {
  * Convert a Unix‑seconds timestamp into a human‑friendly
  * “X minutes/hours/days ago” string (or short date after 7 days).
  */
-function getRelativeTime(unixSec: number): string {
+export function getRelativeTime(unixSec: number): string {
   const now = Date.now()
   const thenMs = unixSec * 1000
   const deltaMs = now - thenMs
@@ -91,7 +92,7 @@ function getRelativeTime(unixSec: number): string {
     return `${days} day${days !== 1 ? 's' : ''} ago`
   }
 
-  // Older than a week: show short date
+  // Older than a week: short date
   const d = new Date(thenMs)
   const month = d.toLocaleString('en-US', { month: 'short' })
   const day = d.getDate()
@@ -107,7 +108,7 @@ export default function SectionPageProvider({
 
   // derive initial pageType from URL path, default to 'New'
   const initialPageType = useMemo<PageType>(() => {
-    const p = pathname.slice(1) // e.g. "top"
+    const p = pathname.slice(1)
     const capitalized = p.charAt(0).toUpperCase() + p.slice(1)
     return (Object.keys(endpointMap) as PageType[]).includes(
       capitalized as PageType
@@ -168,16 +169,13 @@ export default function SectionPageProvider({
       return
     }
 
-    // NEW / BEST: if Comments tab active, skip story fetch
-    if (
-      (pageType === 'New' || pageType === 'Best') &&
-      activeTab !== 'Stories'
-    ) {
+    // NEW: if Comments tab active, skip story fetch
+    if (pageType === 'New' && activeTab !== 'Stories') {
       setIsLoading(false)
       return
     }
 
-    // TOP, JOBS, or New/Best Stories
+    // TOP, BEST, JOBS, or New→Stories: fetch stories
     fetch(`https://hacker-news.firebaseio.com/v0/${key}.json`)
       .then((r) => r.json())
       .then((ids: number[]) =>
@@ -211,47 +209,57 @@ export default function SectionPageProvider({
       .catch(() => setIsLoading(false))
   }, [pageType, activeTab, askShowView])
 
-  // Fetch comments only for New/Best → Comments
+  // NEW → Comments
   useEffect(() => {
-    if (activeTab !== 'Comments' || !['New', 'Best'].includes(pageType)) {
-      return
-    }
+    if (activeTab !== 'Comments' || pageType !== 'New') return
 
     setIsLoading(true)
+
+    // helper to fetch an item by ID
+    async function getItem(id: number): Promise<any> {
+      const res = await fetch(
+        `https://hacker-news.firebaseio.com/v0/item/${id}.json`
+      )
+      if (!res.ok) throw new Error(`Failed to fetch item ${id}`)
+      return res.json()
+    }
+
+    // walk up the parent chain until you hit a non-comment (i.e. a story/job/ask)
+    async function findRootStory(comment: any): Promise<any> {
+      let current = comment
+      while (current && current.type === 'comment') {
+        current = await getItem(current.parent)
+      }
+      return current
+    }
+
     fetch('https://hacker-news.firebaseio.com/v0/updates.json')
       .then((r) => r.json())
       .then((data: { items: number[] }) =>
         Promise.all(
-          data.items.slice(0, 30).map((id) =>
-            fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`)
-              .then((r) => r.json())
-              .then((item: any) =>
-                item.type === 'comment' ? { raw: item } : null
-              )
-          )
-        )
-      )
-      .then((maybe) =>
-        Promise.all(
-          (maybe.filter(Boolean) as { raw: any }[]).map(async ({ raw }) => {
-            const parent = await fetch(
-              `https://hacker-news.firebaseio.com/v0/item/${raw.parent}.json`
-            ).then((r) => r.json())
+          data.items.slice(0, 30).map(async (id) => {
+            const raw = await getItem(id)
+            if (raw.type !== 'comment') return null
+
+            // climb up to the root story
+            const root = await findRootStory(raw)
+
             return {
               id: raw.id,
               author: raw.by,
               time: getRelativeTime(raw.time),
               text: raw.text,
-              postTitle: parent.title,
+              postTitle: root?.title ?? '[deleted]',
               postUrl:
-                parent.url ??
-                `https://news.ycombinator.com/item?id=${parent.id}`
-            }
+                root?.url ?? `https://news.ycombinator.com/item?id=${root?.id}`,
+              storyId: root?.id ?? raw.id
+            } as CommentItemProps
           })
         )
       )
-      .then((list: CommentItemProps[]) => {
-        setComments(list)
+      .then((results) => {
+        // filter out any nulls (non-comments)
+        setComments(results.filter((c): c is CommentItemProps => Boolean(c)))
         setIsLoading(false)
       })
       .catch(() => setIsLoading(false))

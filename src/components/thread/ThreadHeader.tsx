@@ -10,10 +10,11 @@ export default function ThreadHeader({
   points,
   author,
   time,
-  comments,
-  detailUrl = `#/story/${index}`,
-  authorUrl = `#/user/${author}`
+  comments
 }: StoryItemProps) {
+  const detailUrl = `/story/${index}`
+  const authorUrl = `/user/${author}`
+
   return (
     <div className="max-w-[600px] mx-auto pt-8 pb-5 border-b border-gray-100 font-inter">
       {/* Title + menu */}
