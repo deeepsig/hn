@@ -6,7 +6,7 @@ import { useSectionPageContext } from '../contexts/SectionPageContext'
 import hnLogo from '../assets/hn.png'
 
 export default function SectionPage() {
-  const { activeTab, isLoading } = useSectionPageContext()
+  const { activeTab, isLoading, pageType } = useSectionPageContext()
 
   if (isLoading) {
     return (
@@ -24,7 +24,11 @@ export default function SectionPage() {
   return (
     <>
       <SectionHeaderController />
-      {activeTab === 'Stories' ? <StoryList /> : <CommentList />}
+      {pageType === 'New' && activeTab === 'Comments' ? (
+        <CommentList />
+      ) : (
+        <StoryList />
+      )}
     </>
   )
 }
