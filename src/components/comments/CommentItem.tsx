@@ -1,19 +1,18 @@
-// src/components/comments/CommentItem.tsx
 import parse, { DOMNode, domToReact, Element } from 'html-react-parser'
 import { Link } from 'react-router-dom'
 import DOMPurify from 'dompurify'
 import { useState } from 'react'
 import { getRelativeTime } from '../../contexts/SectionPageContext'
 
-interface RawWithChildren {
+export interface RawWithChildren {
   id: number
   by?: string
   time?: number
   text?: string
-  kids?: number[]
+  kids?: number[] // <-- keep raw child IDs
   deleted?: boolean
   dead?: boolean
-  children: RawWithChildren[]
+  children: RawWithChildren[] // pre‑fetched subset
 }
 
 interface CommentItemProps {
@@ -23,10 +22,10 @@ interface CommentItemProps {
   text: string
   variant?: 'list' | 'thread'
   depth?: number
-  // made optional:
   postTitle?: string
   storyId?: number
-  replies?: RawWithChildren[]
+  replies?: RawWithChildren[] // pre‑fetched
+  kids?: number[] // raw kids array
 }
 
 export default function CommentItem({
@@ -37,10 +36,17 @@ export default function CommentItem({
   text,
   variant = 'list',
   depth = 0,
-  replies = []
+  replies = [],
+  kids = []
 }: CommentItemProps) {
   const isThread = variant === 'thread'
   const [collapsed, setCollapsed] = useState(false)
+
+  // Dynamic replies state:
+  const [childReplies, setChildReplies] = useState<RawWithChildren[] | null>(
+    replies.length > 0 ? replies : null
+  )
+  const [loadingChildren, setLoadingChildren] = useState(false)
 
   const cleanHtml = DOMPurify.sanitize(text, {
     ALLOWED_TAGS: [
@@ -77,6 +83,31 @@ export default function CommentItem({
     }
   })
 
+  // On expand: if we haven’t fetched children yet, do so
+  async function handleToggle() {
+    if (collapsed && childReplies === null && Array.isArray(kids)) {
+      setLoadingChildren(true)
+      const fetched = await Promise.all(
+        kids.map(async (kidId) => {
+          const res = await fetch(
+            `https://hacker-news.firebaseio.com/v0/item/${kidId}.json`
+          )
+          const raw = await res.json()
+          if (!raw || raw.deleted || raw.dead) return null
+          return {
+            ...raw,
+            kids: raw.kids ?? [],
+            children: []
+          } as RawWithChildren
+        })
+      )
+      setChildReplies(fetched.filter((c): c is RawWithChildren => Boolean(c)))
+      setLoadingChildren(false)
+    }
+
+    setCollapsed((c) => !c)
+  }
+
   return (
     <div
       className={
@@ -85,12 +116,12 @@ export default function CommentItem({
       }
       style={{ marginLeft: depth * 16 }}
     >
+      {/* header row */}
       <div className="inline-flex items-baseline space-x-2 whitespace-nowrap">
         <a className="font-medium text-gray-900 hover:underline">{author}</a>
         <span className="text-base text-gray-400">·</span>
         <span className="font-normal text-gray-800">{time}</span>
 
-        {/* list‑view only, now safe if undefined */}
         {!isThread && storyId && postTitle && (
           <>
             <span className="text-base text-gray-400">·</span>
@@ -104,9 +135,9 @@ export default function CommentItem({
           </>
         )}
 
-        {isThread && replies.length > 0 && (
+        {isThread && (childReplies?.length || kids.length) > 0 && (
           <button
-            onClick={() => setCollapsed((c) => !c)}
+            onClick={handleToggle}
             className="ml-2 text-xs text-gray-500 hover:underline"
           >
             {collapsed ? '+ expand replies' : '– collapse replies'}
@@ -114,6 +145,7 @@ export default function CommentItem({
         )}
       </div>
 
+      {/* comment body */}
       <div
         className={
           isThread
@@ -124,20 +156,27 @@ export default function CommentItem({
         {content}
       </div>
 
-      {isThread &&
-        !collapsed &&
-        replies.map((child) => (
-          <CommentItem
-            key={child.id}
-            id={child.id}
-            author={child.by!}
-            time={getRelativeTime(child.time!)}
-            text={child.text ?? ''}
-            variant="thread"
-            depth={depth + 1}
-            replies={child.children}
-          />
-        ))}
+      {/* dynamic replies */}
+      {isThread && !collapsed && (
+        <>
+          {loadingChildren && (
+            <p className="mt-2 text-xs text-gray-500">Loading replies…</p>
+          )}
+          {childReplies?.map((child) => (
+            <CommentItem
+              key={child.id}
+              id={child.id}
+              author={child.by!}
+              time={getRelativeTime(child.time!)}
+              text={child.text ?? ''}
+              variant="thread"
+              depth={depth + 1}
+              replies={child.children}
+              kids={child.kids}
+            />
+          ))}
+        </>
+      )}
     </div>
   )
 }
