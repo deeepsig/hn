@@ -1,3 +1,4 @@
+// src/components/comments/CommentItem.tsx
 import parse, { DOMNode, domToReact, Element } from 'html-react-parser'
 import { Link } from 'react-router-dom'
 import DOMPurify from 'dompurify'
@@ -9,10 +10,10 @@ export interface RawWithChildren {
   by?: string
   time?: number
   text?: string
-  kids?: number[] // <-- keep raw child IDs
+  kids?: number[]
   deleted?: boolean
   dead?: boolean
-  children: RawWithChildren[] // pre‑fetched subset
+  children: RawWithChildren[]
 }
 
 interface CommentItemProps {
@@ -24,8 +25,8 @@ interface CommentItemProps {
   depth?: number
   postTitle?: string
   storyId?: number
-  replies?: RawWithChildren[] // pre‑fetched
-  kids?: number[] // raw kids array
+  replies?: RawWithChildren[]
+  kids?: number[]
 }
 
 export default function CommentItem({
@@ -40,14 +41,16 @@ export default function CommentItem({
   kids = []
 }: CommentItemProps) {
   const isThread = variant === 'thread'
-  const [collapsed, setCollapsed] = useState(false)
 
-  // Dynamic replies state:
-  const [childReplies, setChildReplies] = useState<RawWithChildren[] | null>(
-    replies.length > 0 ? replies : null
-  )
-  const [loadingChildren, setLoadingChildren] = useState(false)
+  // controls whether we've expanded/collapsed loaded replies
+  const [expanded, setExpanded] = useState(true)
 
+  // keep track of replies we've fetched & pagination index
+  const [childReplies, setChildReplies] = useState<RawWithChildren[]>(replies)
+  const [nextIndex, setNextIndex] = useState(replies.length)
+  const [loadingMore, setLoadingMore] = useState(false)
+
+  // sanitize + parse HTML
   const cleanHtml = DOMPurify.sanitize(text, {
     ALLOWED_TAGS: [
       'a',
@@ -83,29 +86,32 @@ export default function CommentItem({
     }
   })
 
-  // On expand: if we haven’t fetched children yet, do so
-  async function handleToggle() {
-    if (collapsed && childReplies === null && Array.isArray(kids)) {
-      setLoadingChildren(true)
-      const fetched = await Promise.all(
-        kids.map(async (kidId) => {
-          const res = await fetch(
-            `https://hacker-news.firebaseio.com/v0/item/${kidId}.json`
-          )
-          const raw = await res.json()
-          if (!raw || raw.deleted || raw.dead) return null
-          return {
-            ...raw,
-            kids: raw.kids ?? [],
-            children: []
-          } as RawWithChildren
-        })
-      )
-      setChildReplies(fetched.filter((c): c is RawWithChildren => Boolean(c)))
-      setLoadingChildren(false)
-    }
+  // fetch a single comment (no children)
+  async function fetchComment(id: number): Promise<RawWithChildren | null> {
+    const res = await fetch(
+      `https://hacker-news.firebaseio.com/v0/item/${id}.json`
+    )
+    const raw = await res.json()
+    if (!raw || raw.deleted || raw.dead) return null
+    return {
+      ...raw,
+      kids: raw.kids ?? [],
+      children: []
+    } as RawWithChildren
+  }
 
-    setCollapsed((c) => !c)
+  // load next batch of up to 5 replies
+  async function loadMoreReplies() {
+    if (nextIndex >= kids.length) return
+    setLoadingMore(true)
+
+    const batch = kids.slice(nextIndex, nextIndex + 5)
+    const fetched = await Promise.all(batch.map(fetchComment))
+    const valid = fetched.filter((c): c is RawWithChildren => Boolean(c))
+
+    setChildReplies((prev) => [...prev, ...valid])
+    setNextIndex((i) => i + batch.length)
+    setLoadingMore(false)
   }
 
   return (
@@ -116,7 +122,7 @@ export default function CommentItem({
       }
       style={{ marginLeft: depth * 16 }}
     >
-      {/* header row */}
+      {/* header */}
       <div className="inline-flex items-baseline space-x-2 whitespace-nowrap">
         <a className="font-medium text-gray-900 hover:underline">{author}</a>
         <span className="text-base text-gray-400">·</span>
@@ -135,17 +141,17 @@ export default function CommentItem({
           </>
         )}
 
-        {isThread && (childReplies?.length || kids.length) > 0 && (
+        {isThread && kids.length > 0 && (
           <button
-            onClick={handleToggle}
+            onClick={() => setExpanded((e) => !e)}
             className="ml-2 text-xs text-gray-500 hover:underline"
           >
-            {collapsed ? '+ expand replies' : '– collapse replies'}
+            {expanded ? '– collapse replies' : '+ expand replies'}
           </button>
         )}
       </div>
 
-      {/* comment body */}
+      {/* body */}
       <div
         className={
           isThread
@@ -156,13 +162,10 @@ export default function CommentItem({
         {content}
       </div>
 
-      {/* dynamic replies */}
-      {isThread && !collapsed && (
-        <>
-          {loadingChildren && (
-            <p className="mt-2 text-xs text-gray-500">Loading replies…</p>
-          )}
-          {childReplies?.map((child) => (
+      {/* replies */}
+      {isThread && expanded && (
+        <div>
+          {childReplies.map((child) => (
             <CommentItem
               key={child.id}
               id={child.id}
@@ -175,7 +178,22 @@ export default function CommentItem({
               kids={child.kids}
             />
           ))}
-        </>
+
+          {/* load more replies */}
+          {nextIndex < kids.length && (
+            <div style={{ marginLeft: (depth + 1) * 16 }} className="mt-4">
+              {/* vertical line segment */}
+              <div className="border-l border-gray-200 h-4 ml-[-1px]" />
+              {/* button */}
+              <div
+                onClick={loadMoreReplies}
+                className="mt-2 text-xs text-gray-500 cursor-pointer hover:underline"
+              >
+                {loadingMore ? 'Loading replies…' : 'Load more replies'}
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   )
