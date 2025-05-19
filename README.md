@@ -1,13 +1,10 @@
-TODO: Add setup instruction
-TODO: Add setup instruction
-
 <h2 align="center">SPC Maker News</h2>
 
 This is a responsive hacker news UI alterative that allows for read-only hacker news interaction. While it was supposed to be a clone, within the timeframe the most useful thing this could be was a app that would at least allow you to see what's happening in the hackernews universe. Sort of like a news feed (newspapers??).
 
-![alt text](image.png)
+![alt text](/public/image.png)
 
-![alt text](image-1.png)
+![alt text](/public/image-1.png)
 
 ## UI Design
 
@@ -15,7 +12,7 @@ The design inspiration was largely based on the https://www.modernhn.com/, which
 
 But if you use the extention you'll know that is not responsive and the thread design is a bit lacking, though it might be intentional. We filled those minor loopholes to give a more complete experience. Look at the reddit like lines that we've added in the following image.
 
-![alt text](image-2.png)
+![alt text](/public/image-2.png)
 
 ## AI Tools used
 
@@ -35,4 +32,10 @@ This is a react vite app which uses typescript. It was the more obvious choice f
 
 ## Setup instructions
 
-simply run a local server with npm install npm run dev
+### Install dependencies
+
+`npm install`
+
+### Run development server
+
+`npm run dev`
