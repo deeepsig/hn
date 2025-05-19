@@ -152,13 +152,13 @@ export default function StoryThreadPage() {
         ))}
 
         {visibleCount < allKids.length && (
-          <div className="py-4 text-center">
+          <div className="py-10 text-center">
             <button
               onClick={loadMore}
               disabled={loadingMore}
-              className="px-4 py-2 text-white bg-orange-500 rounded hover:bg-orange-600 disabled:opacity-50"
+              className="px-4 py-2 text-gray-700 bg-gray-100 text-sm font-inter rounded hover:bg-gray-200 disabled:opacity-50"
             >
-              {loadingMore ? 'Loading…' : 'Load more comments'}
+              {loadingMore ? 'Loading…' : 'More'}
             </button>
           </div>
         )}

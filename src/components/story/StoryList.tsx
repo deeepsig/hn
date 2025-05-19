@@ -7,20 +7,20 @@ export default function StoryList() {
     useSectionPageContext()
 
   return (
-    <div className="max-w-[600px] mx-auto pt-2 pb-6">
+    <div className="max-w-[600px] mx-auto pt-2 pb-6 text-sm font-inter">
       <div className="px-2 divide-y divide-gray-100">
         {stories.map((story, _idx) => (
           <StoryItem key={story.index} {...story} />
         ))}
 
         {hasMoreStories && (
-          <div className="py-4 text-center">
+          <div className="py-10 text-center">
             <button
               onClick={loadMoreStories}
               disabled={loadingMore}
-              className="px-4 py-2 text-white bg-orange-500 rounded hover:bg-orange-600 disabled:opacity-50"
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50"
             >
-              {loadingMore ? 'Loading…' : 'Load more stories'}
+              {loadingMore ? 'Loading…' : 'More'}
             </button>
           </div>
         )}

@@ -22,20 +22,20 @@ export interface StoryItemProps {
   source: string
   points: number
   author: string
-  time: string // e.g. "5 hours ago"
+  time: string
   comments: number
   detailUrl: string
   authorUrl: string
 }
 
 export interface CommentItemProps {
-  id: number // comment's own ID
+  id: number
   author: string
-  time: string // e.g. "2 days ago"
+  time: string
   text: string
   postTitle: string
-  postUrl?: string // full story URL
-  storyId: number // ← NEW: root story's ID
+  postUrl?: string
+  storyId: number
 }
 
 interface SectionPageContextType {
@@ -68,39 +68,26 @@ const endpointMap: Record<PageType, string> = {
   Jobs: 'jobstories'
 }
 
-// Items to load per page
+// Base page-size for “normal” pages
 const PAGE_SIZE = 15
 
-/**
- * Convert a Unix‑seconds timestamp into a human‑friendly
- * "X minutes/hours/days ago" string (or short date after 7 days).
- */
 export function getRelativeTime(unixSec: number): string {
   const now = Date.now()
   const thenMs = unixSec * 1000
   const deltaMs = now - thenMs
 
   const seconds = Math.floor(deltaMs / 1000)
-  if (seconds < 60) {
-    return `${seconds} second${seconds !== 1 ? 's' : ''} ago`
-  }
+  if (seconds < 60) return `${seconds} second${seconds !== 1 ? 's' : ''} ago`
 
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) {
-    return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`
-  }
+  if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`
 
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) {
-    return `${hours} hour${hours !== 1 ? 's' : ''} ago`
-  }
+  if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`
 
   const days = Math.floor(hours / 24)
-  if (days < 7) {
-    return `${days} day${days !== 1 ? 's' : ''} ago`
-  }
+  if (days < 7) return `${days} day${days !== 1 ? 's' : ''} ago`
 
-  // Older than a week: short date
   const d = new Date(thenMs)
   const month = d.toLocaleString('en-US', { month: 'short' })
   const day = d.getDate()
@@ -114,7 +101,6 @@ export default function SectionPageProvider({
 }) {
   const { pathname } = useLocation()
 
-  // derive initial pageType from URL path, default to 'New'
   const initialPageType = useMemo<PageType>(() => {
     const p = pathname.slice(1)
     const capitalized = p.charAt(0).toUpperCase() + p.slice(1)
@@ -122,7 +108,7 @@ export default function SectionPageProvider({
       capitalized as PageType
     )
       ? (capitalized as PageType)
-      : 'New'
+      : 'Top'
   }, [pathname])
 
   const [pageType, setPageType] = useState<PageType>(initialPageType)
@@ -133,14 +119,12 @@ export default function SectionPageProvider({
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [loadingMore, setLoadingMore] = useState<boolean>(false)
 
-  // Store full IDs lists for pagination
   const [storyIds, setStoryIds] = useState<number[]>([])
   const [commentIds, setCommentIds] = useState<number[]>([])
   const [visibleStoryCount, setVisibleStoryCount] = useState<number>(PAGE_SIZE)
   const [visibleCommentCount, setVisibleCommentCount] =
     useState<number>(PAGE_SIZE)
 
-  // Helper to fetch an item by ID
   async function getItem(id: number): Promise<any> {
     const res = await fetch(
       `https://hacker-news.firebaseio.com/v0/item/${id}.json`
@@ -149,7 +133,6 @@ export default function SectionPageProvider({
     return res.json()
   }
 
-  // Walk up the parent chain until you hit a non-comment (i.e. a story/job/ask)
   async function findRootStory(comment: any): Promise<any> {
     let current = comment
     while (current && current.type === 'comment') {
@@ -158,110 +141,17 @@ export default function SectionPageProvider({
     return current
   }
 
-  // Load more stories - using parallel fetching pattern from StoryThreadPage
-  const loadMoreStories = () => {
-    if (loadingMore || visibleStoryCount >= storyIds.length) return
-
-    setLoadingMore(true)
-    const nextBatch = storyIds.slice(
-      visibleStoryCount,
-      visibleStoryCount + PAGE_SIZE
-    )
-
-    // Parallel fetching with Promise.all - exactly like StoryThreadPage
-    Promise.all(
-      nextBatch.map((id) =>
-        fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(
-          (r) => r.json()
-        )
-      )
-    )
-      .then((items) => {
-        let mapped: StoryItemProps[] = items.map((i, idx) => ({
-          index: i.id,
-          rank: visibleStoryCount + idx + 1,
-          title: i.title,
-          url: i.url ?? `https://news.ycombinator.com/item?id=${i.id}`,
-          source: i.url ? new URL(i.url).host : 'news.ycombinator.com',
-          points: i.score,
-          author: i.by,
-          time: getRelativeTime(i.time),
-          comments: i.descendants ?? 0,
-          detailUrl: `#/story/${i.id}`,
-          authorUrl: `#/user/${i.by}`
-        }))
-
-        if (
-          (pageType === 'Ask' || pageType === 'Show') &&
-          askShowView === 'Top'
-        ) {
-          mapped = mapped.sort((a, b) => b.points - a.points)
-        }
-
-        setStories((prev) => [...prev, ...mapped])
-        setVisibleStoryCount((prev) => prev + nextBatch.length)
-        setLoadingMore(false)
-      })
-      .catch((err) => {
-        console.error('Error loading more stories:', err)
-        setLoadingMore(false)
-      })
-  }
-
-  // Load more comments - using parallel fetching pattern from StoryThreadPage
-  const loadMoreComments = () => {
-    if (loadingMore || visibleCommentCount >= commentIds.length) return
-
-    setLoadingMore(true)
-    const nextBatch = commentIds.slice(
-      visibleCommentCount,
-      visibleCommentCount + PAGE_SIZE
-    )
-
-    // Helper for finding root story - this is a sequential operation by necessity
-    async function processComment(id: number) {
-      const raw = await getItem(id)
-      if (raw.type !== 'comment') return null
-
-      // Climb up to the root story
-      const root = await findRootStory(raw)
-
-      return {
-        id: raw.id,
-        author: raw.by || '[deleted]',
-        time: getRelativeTime(raw.time),
-        text: raw.text || '',
-        postTitle: root?.title || '[deleted]',
-        postUrl:
-          root?.url || `https://news.ycombinator.com/item?id=${root?.id}`,
-        storyId: root?.id || raw.id
-      } as CommentItemProps
-    }
-
-    // Process all comments in parallel as much as possible
-    Promise.all(nextBatch.map((id) => processComment(id)))
-      .then((results) => {
-        const validComments = results.filter((c): c is CommentItemProps =>
-          Boolean(c)
-        )
-        setComments((prev) => [...prev, ...validComments])
-        setVisibleCommentCount((prev) => prev + nextBatch.length)
-        setLoadingMore(false)
-      })
-      .catch((err) => {
-        console.error('Error loading more comments:', err)
-        setLoadingMore(false)
-      })
-  }
-
-  // Fetch story IDs for the current page type
+  // ───────────────── INITIAL FETCH ─────────────────
   useEffect(() => {
     const resetState = () => {
       setStories([])
       setStoryIds([])
-      setVisibleStoryCount(PAGE_SIZE)
+      setVisibleStoryCount(
+        pageType === 'Ask' || pageType === 'Show' ? PAGE_SIZE * 2 : PAGE_SIZE
+      )
     }
 
+    // Only Stories tab for Ask/Show
     if (pageType === 'New' && activeTab !== 'Stories') {
       resetState()
       return
@@ -271,15 +161,16 @@ export default function SectionPageProvider({
     resetState()
 
     const key = endpointMap[pageType]
-
-    // Fetch story IDs first
     fetch(`https://hacker-news.firebaseio.com/v0/${key}.json`)
       .then((r) => r.json())
       .then((ids: number[]) => {
         setStoryIds(ids)
 
-        // Then fetch the first batch of stories in parallel
-        const firstBatch = ids.slice(0, PAGE_SIZE)
+        // Decide how many to pull up front:
+        const batchSize =
+          pageType === 'Ask' || pageType === 'Show' ? PAGE_SIZE * 2 : PAGE_SIZE
+
+        const firstBatch = ids.slice(0, batchSize)
         return Promise.all(
           firstBatch.map((id) =>
             fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(
@@ -289,7 +180,17 @@ export default function SectionPageProvider({
         )
       })
       .then((items: any[]) => {
-        let mapped: StoryItemProps[] = items.map((i, idx) => ({
+        // Sort first for Ask/Show→Top
+        let sorted = items
+        if (
+          (pageType === 'Ask' || pageType === 'Show') &&
+          askShowView === 'Top'
+        ) {
+          sorted = [...items].sort((a, b) => b.score - a.score)
+        }
+
+        // Then map & rank
+        const mapped: StoryItemProps[] = sorted.map((i, idx) => ({
           index: i.id,
           rank: idx + 1,
           title: i.title || '[no title]',
@@ -303,13 +204,6 @@ export default function SectionPageProvider({
           authorUrl: `#/user/${i.by || 'anonymous'}`
         }))
 
-        if (
-          (pageType === 'Ask' || pageType === 'Show') &&
-          askShowView === 'Top'
-        ) {
-          mapped = mapped.sort((a, b) => b.points - a.points)
-        }
-
         setStories(mapped)
         setIsLoading(false)
       })
@@ -319,7 +213,60 @@ export default function SectionPageProvider({
       })
   }, [pageType, activeTab, askShowView])
 
-  // Fetch recent comments for the Comments tab
+  // ───────────────── PAGINATION ─────────────────
+  const loadMoreStories = () => {
+    // Never load more in Ask/Show
+    if (
+      loadingMore ||
+      visibleStoryCount >= storyIds.length ||
+      pageType === 'Ask' ||
+      pageType === 'Show'
+    ) {
+      return
+    }
+
+    setLoadingMore(true)
+    const nextBatch = storyIds.slice(
+      visibleStoryCount,
+      visibleStoryCount + PAGE_SIZE
+    )
+
+    Promise.all(
+      nextBatch.map((id) =>
+        fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(
+          (r) => r.json()
+        )
+      )
+    )
+      .then((items: any[]) => {
+        let sorted = items
+        // normal pages never sort; Ask/Show is already blocked above
+        // then map & assign proper ranks:
+        const mapped: StoryItemProps[] = sorted.map((i, idx) => ({
+          index: i.id,
+          rank: visibleStoryCount + idx + 1,
+          title: i.title,
+          url: i.url ?? `https://news.ycombinator.com/item?id=${i.id}`,
+          source: i.url ? new URL(i.url).host : 'news.ycombinator.com',
+          points: i.score,
+          author: i.by,
+          time: getRelativeTime(i.time),
+          comments: i.descendants ?? 0,
+          detailUrl: `#/story/${i.id}`,
+          authorUrl: `#/user/${i.by}`
+        }))
+
+        setStories((prev) => [...prev, ...mapped])
+        setVisibleStoryCount((prev) => prev + nextBatch.length)
+        setLoadingMore(false)
+      })
+      .catch((err) => {
+        console.error('Error loading more stories:', err)
+        setLoadingMore(false)
+      })
+  }
+
+  // ───────────────── COMMENTS TAB ─────────────────
   useEffect(() => {
     const resetState = () => {
       setComments([])
@@ -335,14 +282,10 @@ export default function SectionPageProvider({
     setIsLoading(true)
     resetState()
 
-    // Helper for finding root story
     async function processComment(id: number) {
       const raw = await getItem(id)
       if (raw?.type !== 'comment') return null
-
-      // Climb up to the root story
       const root = await findRootStory(raw)
-
       return {
         id: raw.id,
         author: raw.by || '[deleted]',
@@ -359,17 +302,12 @@ export default function SectionPageProvider({
       .then((r) => r.json())
       .then((data: { items: number[] }) => {
         setCommentIds(data.items)
-
-        // Fetch first batch of comments in parallel
         const firstBatch = data.items.slice(0, PAGE_SIZE)
         return Promise.all(firstBatch.map((id) => processComment(id)))
       })
       .then((results) => {
-        // Filter out any nulls (non-comments)
-        const validComments = results.filter((c): c is CommentItemProps =>
-          Boolean(c)
-        )
-        setComments(validComments)
+        const valid = results.filter((c): c is CommentItemProps => Boolean(c))
+        setComments(valid)
         setIsLoading(false)
       })
       .catch((err) => {
@@ -378,7 +316,48 @@ export default function SectionPageProvider({
       })
   }, [pageType, activeTab])
 
-  const hasMoreStories = visibleStoryCount < storyIds.length
+  // ───────────────── COMMENTS PAGINATION ─────────────────
+  const loadMoreComments = () => {
+    if (loadingMore || visibleCommentCount >= commentIds.length) return
+
+    setLoadingMore(true)
+    const nextBatch = commentIds.slice(
+      visibleCommentCount,
+      visibleCommentCount + PAGE_SIZE
+    )
+
+    async function processComment(id: number) {
+      const raw = await getItem(id)
+      if (raw.type !== 'comment') return null
+      const root = await findRootStory(raw)
+      return {
+        id: raw.id,
+        author: raw.by || '[deleted]',
+        time: getRelativeTime(raw.time),
+        text: raw.text || '',
+        postTitle: root?.title || '[deleted]',
+        postUrl: root?.url || `https://news.ycominator.com/item?id=${root?.id}`,
+        storyId: root?.id || raw.id
+      } as CommentItemProps
+    }
+
+    Promise.all(nextBatch.map((id) => processComment(id)))
+      .then((results) => {
+        const valid = results.filter((c): c is CommentItemProps => Boolean(c))
+        setComments((prev) => [...prev, ...valid])
+        setVisibleCommentCount((prev) => prev + nextBatch.length)
+        setLoadingMore(false)
+      })
+      .catch((err) => {
+        console.error('Error loading more comments:', err)
+        setLoadingMore(false)
+      })
+  }
+
+  const hasMoreStories =
+    visibleStoryCount < storyIds.length &&
+    pageType !== 'Ask' &&
+    pageType !== 'Show'
   const hasMoreComments = visibleCommentCount < commentIds.length
 
   return (

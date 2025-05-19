@@ -18,7 +18,7 @@ export default function ThreadHeader({
   return (
     <div className="max-w-[600px] mx-auto pt-8 pb-5 border-b border-gray-100 font-inter">
       {/* Title + menu */}
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-baseline justify-between space-x-2">
         <a
           href={url}
           className="text-[36px] font-medium text-gray-900 hover:underline"
@@ -27,14 +27,18 @@ export default function ThreadHeader({
           {title}
         </a>
         <button className="flex items-center">
-          <DotsThree size={32} weight="bold" className="text-gray-600" />
+          <DotsThree
+            size={32}
+            weight="bold"
+            className="text-gray-600 cursor-help"
+          />
         </button>
       </div>
 
       {/* Metadata */}
       <div className="mt-2 flex flex-wrap items-center text-[14px] text-gray-500 space-x-2">
         <a
-          href={source.startsWith('http') ? source : `https://${source}`}
+          href={url}
           target="_blank"
           rel="noopener noreferrer"
           className="text-orange-500 hover:underline"
