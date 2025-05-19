@@ -37,7 +37,7 @@ export default function StoryItem({
 
       <div className="flex-1">
         <a
-          href={url}
+          href={pageType == 'Ask' ? storyPath : url}
           className="block text-[14.5px] font-normal text-gray-900 hover:underline truncate"
           title={title}
           target="_blank"
