@@ -4,8 +4,8 @@ import ThreadHeader from '../components/thread/ThreadHeader'
 import CommentItem, {
   RawWithChildren
 } from '../components/comments/CommentItem'
-import { getRelativeTime } from '../contexts/SectionPageContext'
 import hnLogo from '../assets/hn.png'
+import { getRelativeTime } from '../utils/timeUtils'
 
 interface RawItem {
   id: number

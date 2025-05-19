@@ -3,7 +3,7 @@ import parse, { DOMNode, domToReact, Element } from 'html-react-parser'
 import { Link } from 'react-router-dom'
 import DOMPurify from 'dompurify'
 import { useState } from 'react'
-import { getRelativeTime } from '../../contexts/SectionPageContext'
+import { getRelativeTime } from '../../utils/timeUtils'
 
 export interface RawWithChildren {
   id: number
