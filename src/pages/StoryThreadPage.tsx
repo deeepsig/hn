@@ -121,7 +121,7 @@ export default function StoryThreadPage() {
     story.url ?? `https://news.ycombinator.com/item?id=${story.id}`
 
   return (
-    <div className="max-w-[600px] mx-auto text-sm font-inter">
+    <div className="max-w-[600px] mx-auto">
       <ThreadHeader
         index={story.id}
         title={story.title!}
@@ -156,7 +156,7 @@ export default function StoryThreadPage() {
             <button
               onClick={loadMore}
               disabled={loadingMore}
-              className="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-100"
+              className="px-4 py-2 text-gray-700 bg-gray-100 text-sm font-inter rounded hover:bg-gray-200 disabled:opacity-50"
             >
               {loadingMore ? 'Loading…' : 'More'}
             </button>

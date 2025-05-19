@@ -18,7 +18,7 @@ export default function ThreadHeader({
   return (
     <div className="max-w-[600px] mx-auto pt-8 pb-5 border-b border-gray-100 font-inter">
       {/* Title + menu */}
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-baseline justify-between space-x-2">
         <a
           href={url}
           className="text-[36px] font-medium text-gray-900 hover:underline"
