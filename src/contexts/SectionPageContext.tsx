@@ -9,6 +9,13 @@ import {
 } from 'react'
 import { useLocation } from 'react-router-dom'
 import { getRelativeTime } from '../utils/timeUtils'
+import {
+  fetchIdsForSection,
+  fetchItemsByIds,
+  fetchItem,
+  fetchRootComment,
+  BASE_URL
+} from '../api/hackerNewsApi'
 
 type Tab = 'Stories' | 'Comments'
 type AskShowView = 'Top' | 'New'
@@ -60,16 +67,6 @@ const SectionPageContext = createContext<SectionPageContextType | undefined>(
   undefined
 )
 
-const endpointMap: Record<PageType, string> = {
-  Top: 'topstories',
-  New: 'newstories',
-  Best: 'beststories',
-  Ask: 'askstories',
-  Show: 'showstories',
-  Jobs: 'jobstories'
-}
-
-// Base page-size for "normal" pages
 const PAGE_SIZE = 15
 
 export default function SectionPageProvider({
@@ -82,9 +79,9 @@ export default function SectionPageProvider({
   const initialPageType = useMemo<PageType>(() => {
     const p = pathname.slice(1)
     const capitalized = p.charAt(0).toUpperCase() + p.slice(1)
-    return (Object.keys(endpointMap) as PageType[]).includes(
-      capitalized as PageType
-    )
+    return (
+      ['Top', 'New', 'Best', 'Ask', 'Show', 'Jobs'] as PageType[]
+    ).includes(capitalized as PageType)
       ? (capitalized as PageType)
       : 'Top'
   }, [pathname])
@@ -103,25 +100,9 @@ export default function SectionPageProvider({
   const [visibleCommentCount, setVisibleCommentCount] =
     useState<number>(PAGE_SIZE)
 
-  async function getItem(id: number): Promise<any> {
-    const res = await fetch(
-      `https://hacker-news.firebaseio.com/v0/item/${id}.json`
-    )
-    if (!res.ok) throw new Error(`Failed to fetch item ${id}`)
-    return res.json()
-  }
-
-  async function findRootStory(comment: any): Promise<any> {
-    let current = comment
-    while (current && current.type === 'comment') {
-      current = await getItem(current.parent)
-    }
-    return current
-  }
-
   // ───────────────── INITIAL FETCH ─────────────────
   useEffect(() => {
-    const resetState = () => {
+    const resetStoriesState = () => {
       setStories([])
       setStoryIds([])
       setVisibleStoryCount(
@@ -129,46 +110,41 @@ export default function SectionPageProvider({
       )
     }
 
-    // Only Stories tab for Ask/Show
-    if (pageType === 'New' && activeTab !== 'Stories') {
-      resetState()
+    // Ask/Show only supports Stories tab
+    if (
+      (pageType === 'Ask' || pageType === 'Show') &&
+      activeTab !== 'Stories'
+    ) {
+      resetStoriesState()
       return
     }
 
     setIsLoading(true)
-    resetState()
+    resetStoriesState()
 
-    const key = endpointMap[pageType]
-    fetch(`https://hacker-news.firebaseio.com/v0/${key}.json`)
-      .then((r) => r.json())
-      .then((ids: number[]) => {
+    // fetch IDs
+    const sectionKey = pageType.toLowerCase()
+    fetchIdsForSection(sectionKey)
+      .then((ids) => {
         setStoryIds(ids)
 
-        // Decide how many to pull up front:
         const batchSize =
           pageType === 'Ask' || pageType === 'Show' ? PAGE_SIZE * 2 : PAGE_SIZE
 
-        const firstBatch = ids.slice(0, batchSize)
-        return Promise.all(
-          firstBatch.map((id) =>
-            fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(
-              (r) => r.json()
-            )
-          )
-        )
+        return Promise.all(ids.slice(0, batchSize).map((id) => fetchItem(id)))
       })
       .then((items: any[]) => {
-        // Sort first for Ask/Show→Top
-        let sorted = items
+        let sortedItems = items
         if (
           (pageType === 'Ask' || pageType === 'Show') &&
           askShowView === 'Top'
         ) {
-          sorted = [...items].sort((a, b) => b.score - a.score)
+          sortedItems = [...items].sort(
+            (a, b) => (b.score || 0) - (a.score || 0)
+          )
         }
 
-        // Then map & rank
-        const mapped: StoryItemProps[] = sorted.map((i, idx) => ({
+        const mapped = sortedItems.map((i, idx) => ({
           index: i.id,
           rank: idx + 1,
           title: i.title || '[no title]',
@@ -193,7 +169,6 @@ export default function SectionPageProvider({
 
   // ───────────────── PAGINATION ─────────────────
   const loadMoreStories = () => {
-    // Never load more in Ask/Show
     if (
       loadingMore ||
       visibleStoryCount >= storyIds.length ||
@@ -204,92 +179,83 @@ export default function SectionPageProvider({
     }
 
     setLoadingMore(true)
-    const nextBatch = storyIds.slice(
+    const nextIds = storyIds.slice(
       visibleStoryCount,
       visibleStoryCount + PAGE_SIZE
     )
 
-    Promise.all(
-      nextBatch.map((id) =>
-        fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(
-          (r) => r.json()
-        )
-      )
-    )
+    fetchItemsByIds(nextIds)
       .then((items: any[]) => {
-        let sorted = items
-        // normal pages never sort; Ask/Show is already blocked above
-        // then map & assign proper ranks:
-        const mapped: StoryItemProps[] = sorted.map((i, idx) => ({
+        const mapped = items.map((i, idx) => ({
           index: i.id,
           rank: visibleStoryCount + idx + 1,
-          title: i.title,
+          title: i.title || '[no title]',
           url: i.url ?? `https://news.ycombinator.com/item?id=${i.id}`,
           source: i.url ? new URL(i.url).host : 'news.ycombinator.com',
-          points: i.score,
-          author: i.by,
-          time: getRelativeTime(i.time),
+          points: i.score || 0,
+          author: i.by || '[deleted]',
+          time: getRelativeTime(i.time || Date.now() / 1000),
           comments: i.descendants ?? 0,
           detailUrl: `#/story/${i.id}`,
-          authorUrl: `#/user/${i.by}`
+          authorUrl: `#/user/${i.by || 'anonymous'}`
         }))
 
         setStories((prev) => [...prev, ...mapped])
-        setVisibleStoryCount((prev) => prev + nextBatch.length)
-        setLoadingMore(false)
+        setVisibleStoryCount((prev) => prev + nextIds.length)
       })
       .catch((err) => {
         console.error('Error loading more stories:', err)
+      })
+      .finally(() => {
         setLoadingMore(false)
       })
   }
 
-  // ───────────────── COMMENTS TAB ─────────────────
+  // ───────────────── COMMENTS TAB in New ─────────────────
   useEffect(() => {
-    const resetState = () => {
+    const resetCommentsState = () => {
       setComments([])
       setCommentIds([])
       setVisibleCommentCount(PAGE_SIZE)
     }
 
     if (activeTab !== 'Comments' || pageType !== 'New') {
-      resetState()
+      resetCommentsState()
       return
     }
 
     setIsLoading(true)
-    resetState()
+    resetCommentsState()
 
-    async function processComment(id: number) {
-      const raw = await getItem(id)
-      if (raw?.type !== 'comment') return null
-      const root = await findRootStory(raw)
-      return {
-        id: raw.id,
-        author: raw.by || '[deleted]',
-        time: getRelativeTime(raw.time || Date.now() / 1000),
-        text: raw.text || '',
-        postTitle: root?.title || '[deleted]',
-        postUrl:
-          root?.url || `https://news.ycombinator.com/item?id=${root?.id}`,
-        storyId: root?.id || raw.id
-      } as CommentItemProps
-    }
-
-    fetch('https://hacker-news.firebaseio.com/v0/updates.json')
+    fetch(`${BASE_URL}/updates.json`)
       .then((r) => r.json())
-      .then((data: { items: number[] }) => {
+      .then(async (data: { items: number[] }) => {
         setCommentIds(data.items)
         const firstBatch = data.items.slice(0, PAGE_SIZE)
-        return Promise.all(firstBatch.map((id) => processComment(id)))
-      })
-      .then((results) => {
-        const valid = results.filter((c): c is CommentItemProps => Boolean(c))
-        setComments(valid)
-        setIsLoading(false)
+        const processed = await Promise.all(
+          firstBatch.map(async (id) => {
+            const raw = await fetchItem(id)
+            if (raw?.type !== 'comment') return null
+            const rootId = await fetchRootComment(id)
+            const root = await fetchItem(rootId)
+            return {
+              id: raw.id,
+              author: raw.by || '[deleted]',
+              time: getRelativeTime(raw.time || Date.now() / 1000),
+              text: raw.text || '',
+              postTitle: root?.title || '[deleted]',
+              postUrl:
+                root?.url ?? `https://news.ycombinator.com/item?id=${root?.id}`,
+              storyId: root?.id || raw.id
+            } as CommentItemProps
+          })
+        )
+        setComments(processed.filter((c): c is CommentItemProps => !!c))
       })
       .catch((err) => {
         console.error('Error fetching comments:', err)
+      })
+      .finally(() => {
         setIsLoading(false)
       })
   }, [pageType, activeTab])
@@ -299,35 +265,38 @@ export default function SectionPageProvider({
     if (loadingMore || visibleCommentCount >= commentIds.length) return
 
     setLoadingMore(true)
-    const nextBatch = commentIds.slice(
+    const nextIds = commentIds.slice(
       visibleCommentCount,
       visibleCommentCount + PAGE_SIZE
     )
 
-    async function processComment(id: number) {
-      const raw = await getItem(id)
-      if (raw.type !== 'comment') return null
-      const root = await findRootStory(raw)
-      return {
-        id: raw.id,
-        author: raw.by || '[deleted]',
-        time: getRelativeTime(raw.time),
-        text: raw.text || '',
-        postTitle: root?.title || '[deleted]',
-        postUrl: root?.url || `https://news.ycominator.com/item?id=${root?.id}`,
-        storyId: root?.id || raw.id
-      } as CommentItemProps
-    }
-
-    Promise.all(nextBatch.map((id) => processComment(id)))
+    Promise.all(
+      nextIds.map(async (id) => {
+        const raw = await fetchItem(id)
+        if (raw.type !== 'comment') return null
+        const rootId = await fetchRootComment(id)
+        const root = await fetchItem(rootId)
+        return {
+          id: raw.id,
+          author: raw.by || '[deleted]',
+          time: getRelativeTime(raw.time || Date.now() / 1000),
+          text: raw.text || '',
+          postTitle: root?.title || '[deleted]',
+          postUrl:
+            root?.url ?? `https://news.ycombinator.com/item?id=${root?.id}`,
+          storyId: root?.id || raw.id
+        } as CommentItemProps
+      })
+    )
       .then((results) => {
-        const valid = results.filter((c): c is CommentItemProps => Boolean(c))
+        const valid = results.filter((c): c is CommentItemProps => !!c)
         setComments((prev) => [...prev, ...valid])
-        setVisibleCommentCount((prev) => prev + nextBatch.length)
-        setLoadingMore(false)
+        setVisibleCommentCount((prev) => prev + nextIds.length)
       })
       .catch((err) => {
         console.error('Error loading more comments:', err)
+      })
+      .finally(() => {
         setLoadingMore(false)
       })
   }
