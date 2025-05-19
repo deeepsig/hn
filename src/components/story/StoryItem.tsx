@@ -34,7 +34,7 @@ export default function StoryItem({
         {pageType === 'Ask' ? (
           <Link
             to={storyPath}
-            className="block text-[14.5px] font-normal text-gray-900 hover:underline truncate"
+            className="block text-[14.5px] font-normal text-gray-900 hover:underline flex-wrap"
             title={title}
           >
             {title}
@@ -42,7 +42,7 @@ export default function StoryItem({
         ) : (
           <a
             href={url}
-            className="block text-[14.5px] font-normal text-gray-900 hover:underline truncate"
+            className="block text-[14.5px] font-normal text-gray-900 hover:underline flex-wrap"
             title={title}
             target="_blank"
             rel="noopener noreferrer"
