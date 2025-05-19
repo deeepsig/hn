@@ -152,7 +152,7 @@ export default function StoryThreadPage() {
         ))}
 
         {visibleCount < allKids.length && (
-          <div className="py-4 text-center">
+          <div className="py-10 text-center">
             <button
               onClick={loadMore}
               disabled={loadingMore}

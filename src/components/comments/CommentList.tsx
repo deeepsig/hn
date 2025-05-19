@@ -14,7 +14,7 @@ export default function CommentList() {
         ))}
 
         {hasMoreComments && (
-          <div className="py-4 text-center">
+          <div className="py-10 text-center">
             <button
               onClick={loadMoreComments}
               disabled={loadingMore}

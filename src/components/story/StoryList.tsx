@@ -14,7 +14,7 @@ export default function StoryList() {
         ))}
 
         {hasMoreStories && (
-          <div className="py-4 text-center">
+          <div className="py-10 text-center">
             <button
               onClick={loadMoreStories}
               disabled={loadingMore}
