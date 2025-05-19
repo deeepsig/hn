@@ -20,7 +20,7 @@ export default function MiddleSectionHandler() {
           key={item.label}
           to={item.href}
           className={({ isActive }) =>
-            `flex items-center px-2 md:px-4 lg:px-8 h-full text-base ${
+            `flex items-center px-2 md:px-4 lg:px-8 h-full text-sm sm:text-base ${
               isActive
                 ? 'text-orange-500 font-medium border-b-2 border-orange-500'
                 : 'text-black hover:text-gray-800'
