@@ -75,7 +75,7 @@ export default function StoryItem({
           {/* Author */}
           <span className="inline-flex items-center space-x-2">
             <Link to={storyPath} className="hover:underline">
-              by {author}
+              {author}
             </Link>
             <span className="text-sm text-gray-400">·</span>
           </span>
