@@ -22,13 +22,13 @@ export default function SectionPage() {
   }
 
   return (
-    <>
+    <div className="px-4 sm:px-0">
       <SectionHeaderController />
       {pageType === 'New' && activeTab === 'Comments' ? (
         <CommentList />
       ) : (
         <StoryList />
       )}
-    </>
+    </div>
   )
 }

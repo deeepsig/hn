@@ -121,7 +121,7 @@ export default function StoryThreadPage() {
     story.url ?? `https://news.ycombinator.com/item?id=${story.id}`
 
   return (
-    <div className="max-w-[600px] mx-auto">
+    <div className="max-w-[600px] mx-auto px-4 sm:px-0">
       <ThreadHeader
         index={story.id}
         title={story.title!}
