@@ -10,7 +10,7 @@ export default function App() {
     <SectionPageProvider>
       <Navbar />
       <Routes>
-        <Route path="/" element={<Navigate to="/show" replace />} />
+        <Route path="/" element={<Navigate to="/top" replace />} />
         <Route path="/:pageType" element={<SectionPageController />} />
         <Route path="/story/:storyId" element={<StoryThreadPage />} />
       </Routes>

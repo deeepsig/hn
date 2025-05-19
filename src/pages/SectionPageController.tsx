@@ -20,7 +20,7 @@ export default function SectionPageController() {
 
   // redirect if missing or not in our allowed list
   if (!rawParam || !isAllowedParam(rawParam)) {
-    return <Navigate to="/show" replace />
+    return <Navigate to="/top" replace />
   }
 
   // now rawParam is narrowed to AllowedParam
