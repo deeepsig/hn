@@ -51,7 +51,7 @@ export default function StoryItem({
           {pageType !== 'Ask' && (
             <span className="inline-flex items-center space-x-2">
               <a
-                href={source}
+                href={url}
                 className="font-normal text-orange-500 hover:underline"
                 target="_blank"
                 rel="noopener noreferrer"
