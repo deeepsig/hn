@@ -34,7 +34,7 @@ export default function ThreadHeader({
       {/* Metadata */}
       <div className="mt-2 flex flex-wrap items-center text-[14px] text-gray-500 space-x-2">
         <a
-          href={source.startsWith('http') ? source : `https://${source}`}
+          href={url}
           target="_blank"
           rel="noopener noreferrer"
           className="text-orange-500 hover:underline"
