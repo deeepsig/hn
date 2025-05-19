@@ -1,4 +1,3 @@
-// src/components/navbar/RightSectionHandler.tsx
 import {
   MagnifyingGlass,
   User,
@@ -33,9 +32,10 @@ export default function RightSectionHandler() {
       {headerIcons.map((item, index) => (
         <button
           key={index}
-          className="text-gray-500"
+          className="text-gray-500 cursor-help"
           aria-label={item.ariaLabel}
           onClick={item.onClick}
+          title="Coming soon"
         >
           {item.icon}
         </button>

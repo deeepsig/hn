@@ -27,7 +27,11 @@ export default function ThreadHeader({
           {title}
         </a>
         <button className="flex items-center">
-          <DotsThree size={32} weight="bold" className="text-gray-600" />
+          <DotsThree
+            size={32}
+            weight="bold"
+            className="text-gray-600 cursor-help"
+          />
         </button>
       </div>
 

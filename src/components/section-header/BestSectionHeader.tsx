@@ -7,7 +7,11 @@ export default function BestSectionHeader() {
       <div className="flex items-baseline justify-between">
         <h1 className="text-[36px] font-medium text-gray-900">Best</h1>
         <button className="flex items-baseline">
-          <DotsThree size={32} className="text-gray-600" weight="bold" />
+          <DotsThree
+            size={32}
+            className="text-gray-600 cursor-help"
+            weight="bold"
+          />
         </button>
       </div>
     </div>

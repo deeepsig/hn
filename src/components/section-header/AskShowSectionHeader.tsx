@@ -29,7 +29,11 @@ export default function AskShowSectionHeader() {
         </div>
 
         <button className="flex items-baseline">
-          <DotsThree size={32} className="text-gray-600" weight="bold" />
+          <DotsThree
+            size={32}
+            className="text-gray-600 cursor-help"
+            weight="bold"
+          />
         </button>
       </div>
     </div>
