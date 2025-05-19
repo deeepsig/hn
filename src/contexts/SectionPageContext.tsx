@@ -108,7 +108,7 @@ export default function SectionPageProvider({
       capitalized as PageType
     )
       ? (capitalized as PageType)
-      : 'New'
+      : 'Show'
   }, [pathname])
 
   const [pageType, setPageType] = useState<PageType>(initialPageType)
