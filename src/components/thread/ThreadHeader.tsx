@@ -16,17 +16,17 @@ export default function ThreadHeader({
   const authorUrl = `/user/${author}`
 
   return (
-    <div className="max-w-[600px] mx-auto pt-8 pb-5 border-b border-gray-100 font-inter">
+    <div className="w-full max-w-[600px] mx-auto pt-6 sm:pt-8 pb-5 border-b border-gray-100 font-inter sm:px-2 md:px-0">
       {/* Title + menu */}
-      <div className="flex items-baseline justify-between space-x-2">
+      <div className="flex items-baseline justify-between flex-wrap">
         <a
           href={url}
-          className="text-[36px] font-medium text-gray-900 hover:underline"
+          className="flex-1 min-w-0 text-2xl sm:text-3xl md:text-4xl font-medium text-gray-900 hover:underline break-words"
           title={title}
         >
           {title}
         </a>
-        <button className="flex items-center">
+        <button className="flex-shrink-0 ml-2">
           <DotsThree
             size={32}
             weight="bold"
@@ -36,7 +36,7 @@ export default function ThreadHeader({
       </div>
 
       {/* Metadata */}
-      <div className="mt-2 flex flex-wrap items-center text-[14px] text-gray-500 space-x-2">
+      <div className="mt-2 flex flex-col sm:flex-row flex-wrap items-start sm:items-center text-[14px] text-gray-500 space-y-1 sm:space-y-0 sm:space-x-2">
         <a
           href={url}
           target="_blank"
@@ -45,19 +45,19 @@ export default function ThreadHeader({
         >
           ({source.replace(/^https?:\/\//, '')})
         </a>
-        <span>·</span>
+        <span className="hidden sm:inline">·</span>
         <a href={detailUrl} className="hover:underline">
           {points} pts
         </a>
-        <span>·</span>
+        <span className="hidden sm:inline">·</span>
         <a href={authorUrl} className="hover:underline">
-          by {author}
+          {author}
         </a>
-        <span>·</span>
+        <span className="hidden sm:inline">·</span>
         <a href={detailUrl} className="hover:underline">
           {time}
         </a>
-        <span>·</span>
+        <span className="hidden sm:inline">·</span>
         <a href={detailUrl} className="hover:underline">
           {comments} comments
         </a>

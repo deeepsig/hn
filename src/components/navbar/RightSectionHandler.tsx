@@ -28,7 +28,7 @@ const headerIcons: NavIconItem[] = [
 
 export default function RightSectionHandler() {
   return (
-    <div className="flex items-center space-x-8">
+    <div className="hidden lg:flex items-center space-x-2 md:space-x-4 lg:space-x-8">
       {headerIcons.map((item, index) => (
         <button
           key={index}

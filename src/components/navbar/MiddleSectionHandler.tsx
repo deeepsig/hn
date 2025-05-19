@@ -1,6 +1,6 @@
 // src/components/navbar/MiddleSectionHandler.tsx
 import { NavLink } from 'react-router-dom'
-import { CaretDown } from '@phosphor-icons/react'
+// import { CaretDown } from '@phosphor-icons/react'
 import { NavItem } from '../../types/navigation'
 
 const navigationItems: NavItem[] = [
@@ -14,13 +14,13 @@ const navigationItems: NavItem[] = [
 
 export default function MiddleSectionHandler() {
   return (
-    <nav className="hidden h-full md:flex">
+    <nav className="flex h-full space-x-2 md:space-x-4 lg:space-x-6">
       {navigationItems.map((item) => (
         <NavLink
           key={item.label}
           to={item.href}
           className={({ isActive }) =>
-            `flex items-center px-6 h-full text-base ${
+            `flex items-center h-full text-base px-2 lg:px-4 ${
               isActive
                 ? 'text-orange-500 font-medium border-b-2 border-orange-500'
                 : 'text-black hover:text-gray-800'
@@ -30,12 +30,6 @@ export default function MiddleSectionHandler() {
           {item.label}
         </NavLink>
       ))}
-      <button
-        className="flex items-center h-full px-6 text-gray-500"
-        aria-label="More options"
-      >
-        <CaretDown size={16} weight="bold" />
-      </button>
     </nav>
   )
 }
